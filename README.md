@@ -36,7 +36,7 @@ This code is based on example code given on the tex-stackexchange see [here](htt
 `sbi.R`  - R functions for the course Statistical Bioinformatics
 
 * Download: [sbi.R](https://raw.githubusercontent.com/mittelmark/Rcode/main/sbi/sbi.R)
-* Documentation: [sbi.html](https://htmlpreview.github.io/?https://github.com/mittelmark/Rcode/blob/master/bkcd/sbi.html)
+* Documentation: [sbi.html](https://htmlpreview.github.io/?https://github.com/mittelmark/Rcode/blob/master/sbi/sbi.html)
 
 Here an example, a PCA pairs plot create with the function `sbi$pca.pairs`.
 
