@@ -21,4 +21,5 @@ Here an example, the internal workflow to create such plots written with script 
 
 ![](bkcd/tikz-flowchart.png)
 
+This code is based on example code given on the tex-stackexchange see [here](https://tex.stackexchange.com/questions/74878/create-xkcd-style-diagram-in-tex).
 
