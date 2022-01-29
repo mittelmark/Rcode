@@ -2,6 +2,11 @@
 
 This is a repository with single file R-scripts and some R tutorials.
 
+** Table of Contents**
+
+* `bkcd.R`  - xkcd like plots using base graphicsfunctions and operators
+* `sbi.R`  - R functions for the course Statistical Bioinformatics
+
 ## Single file R-scripts
   
 
@@ -10,9 +15,9 @@ and placing it on a easy to remember place on your filesyste. I prefere to
 place such scripts at *~/R/dlib*. That way I can write anywhere in myscripts
 something like `source("~/R/dlib/filename.R")` to load the script.
 
-### xkcd.R
+### bcd.R
 
-xkcd.R  - xkcd like plots using base graphicsfunctions and operators
+`bkcd.R`  - xkcd like plots using base graphicsfunctions and operators
 
 * Download: [bkcd.R](https://raw.githubusercontent.com/mittelmark/Rcode/main/bkcd/bkcd.R)
 * Documentation: [bkcd.html](https://htmlpreview.github.io/?https://github.com/mittelmark/Rcode/blob/master/bkcd/bkcd.html)
@@ -22,4 +27,16 @@ Here an example, the internal workflow to create such plots written with script 
 ![](bkcd/tikz-flowchart.png)
 
 This code is based on example code given on the tex-stackexchange see [here](https://tex.stackexchange.com/questions/74878/create-xkcd-style-diagram-in-tex).
+
+### sbi.R
+
+`sbi.R`  - R functions for the course Statistical Bioinformatics
+
+* Download: [sbi.R](https://raw.githubusercontent.com/mittelmark/Rcode/main/sbi/sbi.R)
+* Documentation: [sbi.html](https://htmlpreview.github.io/?https://github.com/mittelmark/Rcode/blob/master/bkcd/sbi.html)
+
+Here an example, a PCA pairs plot create with the function `sbi$pca.pairs`.
+
+![](sbi/pca.png)
+
 
