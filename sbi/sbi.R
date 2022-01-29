@@ -35,6 +35,7 @@
 #'   * [sbi$etaSquared](#etaSquared) - effect size measure for Anova or a linear model (stats) 
 #'   * [sbi$file.cat](#file.cat) - displays a file to the terminal (file)
 #'   * [sbi$file.head](#file.head) - displays the first lines of a file to the terminal (file)
+#'   * [sbi$flow](#flow) - very simple flowcharter (plot)
 #'   * [sbi$fmt](#fmt) - Python like formatting of strings using curly braces (text)
 #'   * [sbi$gmean](#gmean) - geometric mean for a numerical vector, mean of products (stats)
 #'   * [sbi$hmean](#hmean) - harmonic mean for a numerical vector, mean of ratios (stat)
@@ -910,14 +911,14 @@ sbi$dpairs.legend <- function (labels,col='grey80',pch=15,side="bottom",cex=2) {
 #' 
 #' > Example:
 #' 
-#' > ```{r eval=FALSE}
+#' > ```{r eval=TRUE}
 #'   data(iris)
 #'   ir=iris
 #'   ir[c(1,3),1]=NA
 #'   ir[2,2]=NA
 #'   ir[4,4]=NA
 #'   head(ir)
-#'   head(omit.na(ir)) # removes all rows with an NA somewhere
+#'   head(na.omit(ir)) # removes all rows with an NA somewhere
 #'   head(sbi$drop_na(ir,1:2)) # just checks the first two columns
 #' > ```
 #' 
@@ -1083,6 +1084,97 @@ sbi$file.head = function (filename,n=6) {
     fin=file(filename,'r')
     res=readLines(fin,n=n)
     return(res)
+}
+
+#'
+#' <a name="flow"> </a>
+#' **sbi$flow(x,y,lab="",...)** 
+#' 
+#' > Very simple flowcharter. For more advanced flowcharts use package like *diagram*.
+#' 
+#' > Arguments:
+#' 
+#' > - _x_ - coordinate in chessboard notation like 'A1', 'C3', etc
+#'   - _y_ - coordinate in chessboard notation like 'A1', if  given we assume a line or arrow, otherwise a node, default: NULL
+#'   - _lab_ - label for a node shown as rectangle, default: ""
+#'   - _type_ - if y is given, either "arrow" or "line", default: "arrow"
+#'   - _axes_ - should to plot axes been shown, default: FALSE
+#'   - _lwd_ - linewidth for arrows or lines, default: 2
+#'   - _radx_ - rectangle width, default: 0.8
+#'   - _radx_ - rectangle height, default: 0.7  
+#'   - _cex_  - text expansion for rectangle labels, default: 1
+#'   - _col_ - background color for rectangle, default: "skyblue"
+#'   - _border_ - border color for rectangle, default: "black"
+#'   - _arrow.col_ - color for arrows and lines, default: "black"
+#'   - _shadow_ - should a shadow been shown around the rectangle, default: TRUE
+#'   - _shadow.col_ - color of the shadow, default: "#bbbbbb90"
+#'   _ _..._ - remaining arguments delegated to the plot function, the rectangle function and so on
+#' 
+#' > Returns: Nothing.
+#' 
+#' > Example:
+#' 
+#' 
+#' > ```{r fig=TRUE}
+#' flow=sbi$flow
+#' flow(4,4,axes=TRUE) # grid setup, axes just for fun
+#' grid()              # make it more chessboard like
+#' flow("A1","C1",lwd=3) # first edges
+#' flow("A1","B4",lwd=3)
+#' flow("C1","D3",lwd=3,arrow.col="salmon",type="line") # a line
+#' flow("A1",lab="Hello",radx=1,rady=0.8,cex=1.2) # then nodes
+#' flow("C1",lab="World!",col="salmon",radx=1,rady=0.8,cex=1.2)
+#' flow("B4",lab="B4",cex=1.2)
+#' flow("D3",lab="This is\nD3",cex=1.2,col="cornsilk")
+#' > ```
+#' 
+
+#par(pty="s")
+
+sbi$flow = function (x,y=NULL,lab="",type="arrow",axes=FALSE,lwd=2,
+                     radx=0.8,rady=0.7,cex=1,col="skyblue",
+                     border="black",arrow.col="black",
+                     shadow=TRUE,shadow.col="#bbbbbb99",...) {
+     f2v = function (x) {
+         col=substr(x,1,1)
+         col=as.integer(which(LETTERS==col))
+         row=as.integer(substr(x,2,2))
+         return(c(col,row))
+     }
+    if (is.numeric(x) & is.numeric(y)) {
+        plot(1,type="n",xlim=c(0.5,x+0.5),ylim=c(0.5,y+0.5),
+             xlab="",ylab="",axes=FALSE,...)
+        if (axes) {
+            axis(2,lwd=0)
+            axis(1,at=1:x,labels=LETTERS[1:x],lwd=0)
+            box()
+        }
+    } else if (grepl("^[A-Z][0-9]+",x) & (!is.null(y) && grepl("^[A-Z][0-9]+",y))) {
+        # arrow or line
+        from=f2v(x)
+        to=f2v(y)
+        if (type == "arrow") {
+            hx=(from[1]+to[1])/2
+            hy=(from[2]+to[2])/2
+            #arrows(from[1],from[2],hx,hy,length=0.15,angle=20,lwd=2)
+            arrows(hx,hy,to[1],to[2],lwd=lwd,code=0,col=arrow.col,...)
+            arrows(from[1],from[2],hx,hy,length=0.05*lwd,angle=20,lwd=lwd,col=arrow.col,...)
+        } else {
+            lines(x=c(from[1],to[1]),y=c(from[2],to[2]),lwd=lwd,col=arrow.col,...)
+        }
+    } else if (grepl("^[A-Z][0-9]+",x)) {
+        pos=f2v(x)
+        if (shadow) {
+            rect((pos[1]-0.5*radx)+0.1,(pos[2]-0.5*rady)-0.1,
+                 (pos[1]+0.5*radx)+0.1,(pos[2]+0.5*rady)-0.1,
+                 col=shadow.col,border=shadow.col,...)
+        }
+        rect(pos[1]-0.5*radx,pos[2]-0.5*rady,
+             pos[1]+0.5*radx,pos[2]+0.5*rady,
+             col=col,border=border,...)
+        text(pos[1],pos[2],lab,cex=cex,...)
+    }
+      
 }
 
 #'
@@ -1513,7 +1605,7 @@ sbi$mi = function (x,y=NULL,breaks=4,norm=FALSE) {
 
 #' 
 #'  <a name="package.deps"> </a>
-#' **package.deps(pkgName,mode='all')**
+#' **sbi$package.deps(pkgName,mode='all')**
 #' 
 #' > Return the packages which are required by the given package name.
 #' 
