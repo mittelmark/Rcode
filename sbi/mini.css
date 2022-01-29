@@ -48,10 +48,13 @@
     p.author, p.date {
         font-size: 110%;
     }
-    
     h2 {
         text-transform: uppercase;
     }
+    h4.author, h4.date {
+        text-align: center;
+    }
+
     pre, blockquote pre {
         border-top: 0.1em #9ac solid;
         background: #e9f6ff;
