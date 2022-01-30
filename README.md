@@ -71,3 +71,25 @@ a Venn diagram is build using just basic R plot commands on an empty plot surfac
 Here the link: [tutorials/venn-01.html](https://htmlpreview.github.io/?https://github.com/mittelmark/Rcode/blob/master/tutorials/venn-01.html)
 
 ![](tutorials/venn-01.png)
+
+## Links
+
+Here a collection to interesting R projects, blogs etc.
+
+* [r-bloggers.com](https://www.r-bloggers.com/)
+* [box: Modules for R](https://github.com/klmr/box)
+* [awesome R packages](https://github.com/qinwf/awesome-R)
+* [rvest package](https://blog.rstudio.org/2014/11/24/rvest-easy-web-scraping-with-r/)
+* [RSQLite](https://github.com/rstats-db/RSQLite)
+* [openxlsx](https://github.com/awalker89/openxlsx)
+* [munsell](https://github.com/cwickham/munsell)
+* [latticeExtras](http://latticeextra.r-forge.r-project.org/)
+* [igraph](http://igraph.org/)
+* [randomForest](https://www.stat.berkeley.edu/~breiman/RandomForests/)
+* [formatR](http://yihui.name/formatR/)
+* [plumber](http://plumber.trestletech.com/)
+* [Rcpp](http://www.rcpp.org/)
+* [RcppArmadillo](https://github.com/RcppCore/RcppArmadillo)
+* [diagram](https://cran.r-project.org/web/packages/diagram/index.html)
+* [shape](https://cran.r-project.org/web/packages/shape/index.html)
+
