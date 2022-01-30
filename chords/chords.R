@@ -407,7 +407,7 @@ if (sys.nframe() == 0L && !interactive()) {
             if (ext=="pdf") {
                 pdf(outfile,width=w,height=h)
             } else if (ext == "png") {
-                png(outfile,width=w*70*length(chrds),height=h*70)
+                png(outfile,width=w*70,height=h*70)
             } else if (ext == "svg") {
                 svg(outfile,width=w,height=h)
             } else{
