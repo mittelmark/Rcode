@@ -56,6 +56,6 @@ learning to program R and to create their own plots and graphics.
 Venn diagrams are diagrams showing relations between sets. The following link provides a tutorial where 
 a Venn diagram is build using just basic R plot commands on an empty plot surface. 
 
-Here the link: [tutorials/venn-01.html](tutorials/venn-01.html)
+Here the link: [tutorials/venn-01.html](https://htmlpreview.github.io/?https://github.com/mittelmark/Rcode/blob/master/tutorials/venn-01.html)
 
 ![](tutorials/venn-01.png)
