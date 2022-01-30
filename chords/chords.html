@@ -75,7 +75,7 @@ if (window.hljs) {
 <li><a href="#usage">USAGE</a></li>
 <li><a href="#functions">FUNCTIONS</a>
 <ul>
-<li>[chords$chord) - generate chord diagrams for six-string inststruments like the guitar</li>
+<li><a href="#chord">chords$chord</a> - generate chord diagrams for six-string inststruments like the guitar</li>
 </ul></li>
 <li><a href="#examples">EXAMPLES</a></li>
 <li><a href="#citation">CITATION</a></li>
@@ -94,7 +94,10 @@ if (window.hljs) {
 chord(chord=&quot;C&quot;,positions=&quot;X32010&quot;,fingerings=&quot;0RM0I0&quot;) 
 chord(chord=&quot;Dm&quot;,positions=&quot;XX0231&quot;,fingerings=&quot;000MRI&quot;) </code></pre>
 <p>Standalone application:</p>
-<pre><code>Rscript ~/R/dlib/chords.R C:X32010:0RM0I0 Dm:XX0231:000MRI out.pdf 
+<pre><code>Rscript ~/R/dlib/chords.R --chords C:X32010:0RM0I0 Dm:XX0231:000MRI out.pdf 
+Rscript chords.R --chords --layout 2,3 \ 
+         C:0003:000R Dm:2210:MRI0 Em:0432:0RMI \ 
+         F:2010:M0I0 G7:0212:0RIM Am:2000:M000  GCEA-C-Dur.svg 
 Rscript ~/R/dlib/chords.R --help 
 Rscript ~/R/dlib/chords.R --docu # create documentation </code></pre>
 </div>
@@ -130,13 +133,15 @@ To have a look which variables and functions exists in this namesspace you can u
 <div id="application-chords.r" class="section level3">
 <h3>Application chords.R</h3>
 <p>Alternatively, if you make the script executable and you<br />
-move into a folder belonging to your PATH variable, you can use the script <code>chords.R</code> as a standalone executable you can directly from the terminal create chord charts.</p>
-<pre><code>$ chords.R --convert infile.tex infile.png </code></pre>
+move into a folder belonging to your PATH variable, you can use the script <code>chords.R</code> as a standalone executable you can directly from the terminal create chord charts. Here an invocation to create 6 chords for the C-Dur scale of an Ukulele in GCES tuning.</p>
+<pre><code>$ chords.R --chords C:0003:000R Dm:2210:MRI0 Em:0432:0RMI \ 
+    F:2010:M0I0 G7:0212:0RIM Am:2000:M000  GCEA-C-Dur.png </code></pre>
 <p>Possible output file formats are :</p>
 <ul>
 <li><code>.pdf</code> - using standard R graphics</li>
 <li><code>.png</code> - using standard R graphics</li>
 <li><code>.svg</code> - using Cairo-SVG device if available</li>
+<li><code>.tikz</code> - using tikzDevice if available</li>
 </ul>
 </div>
 </div>
@@ -233,12 +238,6 @@ Rscript chords.R --docu </code></pre>
 <p>The script <code>chords.R</code> can be executed directly from the command line as described above, using the docu flag all lines starting with<br />
 the <code>#&#39;</code> character sequence are extracted and then processed using the library <a href="https://cran.r-project.org/web/packages/rmarkdown">rmarkdown</a> which evaluates the embedded code chunks.</p>
 </div>
-<div id="application-mode" class="section level2">
-<h2>Application mode</h2>
-<p>The script can be run standalone, here a invocation to create 6 chords for the C-Dur scale of an Ukulele in GCES tuning.</p>
-<pre><code>Rscript chords.R --chords C:0003:000R Dm:2210:MRI0 Em:0432:0RMI \ 
-    F:2010:M0I0 G7:0212:0RIM Am:2000:M000  GCEA-C-Dur.pdf </code></pre>
-</div>
 <div id="links" class="section level2">
 <h2>LINKS</h2>
 <p><a name="links"> </a></p>
@@ -254,8 +253,9 @@ the <code>#&#39;</code> character sequence are extracted and then processed usin
 <li>Kapo display</li>
 <li>flexibility in placing the Chord indicator, top or bottom</li>
 <li>fret indicator on the right 3rd, 4th, etc.</li>
-<li>plotting scales “0000|0R111|0011|0101|001R” from top to bottom (R is root indicator)a</li>
+<li>plotting scales “0000|0R111|0011|0101|001R” from top to bottom (R is root indicator)</li>
 <li>rotate the plot</li>
+<li>changing fonts as well in terminal application mode</li>
 </ul>
 </div>
 <div id="changelog" class="section level2">

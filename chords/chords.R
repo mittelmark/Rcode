@@ -16,7 +16,7 @@
 #' * [DESCRIPTION](#description)
 #' * [USAGE](#usage)
 #' * [FUNCTIONS](#functions)
-#'     * [chords$chord) - generate chord diagrams for six-string inststruments like the guitar
+#'     * [chords$chord](#chord) - generate chord diagrams for six-string inststruments like the guitar
 #' * [EXAMPLES](#examples)
 #' * [CITATION](#citation)
 #' * [DOCUMENTATION](#documentation)
@@ -40,6 +40,9 @@
 #' 
 #' ```
 #' Rscript ~/R/dlib/chords.R --chords C:X32010:0RM0I0 Dm:XX0231:000MRI out.pdf
+#' Rscript chords.R --chords --layout 2,3 \
+#'          C:0003:000R Dm:2210:MRI0 Em:0432:0RMI \
+#'          F:2010:M0I0 G7:0212:0RIM Am:2000:M000  GCEA-C-Dur.svg
 #' Rscript ~/R/dlib/chords.R --help
 #' Rscript ~/R/dlib/chords.R --docu # create documentation
 #' ```
@@ -89,9 +92,11 @@
 #' Alternatively, if you make the script executable and you 
 #' move into a folder belonging to your PATH variable,
 #' you can use the script `chords.R` as a standalone executable you can directly from the terminal create chord charts.
+#' Here an invocation to create 6 chords for the C-Dur scale of an Ukulele in GCES tuning.
 #' 
 #' ```
-#' $ chords.R --convert infile.tex infile.png
+#' $ chords.R --chords C:0003:000R Dm:2210:MRI0 Em:0432:0RMI \
+#'     F:2010:M0I0 G7:0212:0RIM Am:2000:M000  GCEA-C-Dur.png
 #' ```
 #' 
 #' Possible output file formats are :
@@ -99,6 +104,7 @@
 #' * `.pdf` - using standard R graphics
 #' * `.png` - using standard R graphics
 #' * `.svg` - using Cairo-SVG device if available
+#' * `.tikz` - using tikzDevice if available
 #' 
 
 chords=new.env()
@@ -287,15 +293,6 @@ chords$chord = function (tuning="EADGBE",chord="D",nfrets=5,
 #' The script `chords.R` can be executed directly from the command line as described above, using the docu flag all lines starting with 
 #' the `#'` character sequence are extracted and then processed using the library [rmarkdown](https://cran.r-project.org/web/packages/rmarkdown) which evaluates the embedded code chunks.
 #' 
-#' ## APPLICATION MODE
-#' 
-#' The script can be run standalone, here an invocation to create 6 chords for the C-Dur scale of an Ukulele in GCES tuning.
-
-#' ```
-#' Rscript chords.R --chords C:0003:000R Dm:2210:MRI0 Em:0432:0RMI \
-#'     F:2010:M0I0 G7:0212:0RIM Am:2000:M000  GCEA-C-Dur.pdf
-#' ```
-#' 
 #' ## LINKS
 #' <a name="links"> </a>
 #' 
@@ -308,7 +305,7 @@ chords$chord = function (tuning="EADGBE",chord="D",nfrets=5,
 #' * Kapo display
 #' * flexibility in placing the Chord indicator, top or bottom
 #' * fret indicator on the right 3rd, 4th, etc.
-#' * plotting scales "0000|0R111|0011|0101|001R" from top to bottom (R is root indicator)a
+#' * plotting scales "0000|0R111|0011|0101|001R" from top to bottom (R is root indicator)
 #' * rotate the plot
 #' * changing fonts as well in terminal application mode
 #' 
@@ -351,6 +348,8 @@ if (sys.nframe() == 0L && !interactive()) {
         cat("chords.R - create Chord diagrams for string instruments\n")
         cat("\nUsage: Rscript chords.R chord:positions:fingerings [chord:postions:fingerings] outfile.(pdf|png|svg)")
         cat("\nExample: Rscript chords.R --chords Fadd9:XX3213:00RMIP Fadd9.png")
+        cat("   with command line argument layout you can change the layout: here a 2 rows 3 column layout:\n")
+        cat(" Rscript chords.R --chords --layout 2,3 C:0003:000R Dm:2210:MRI0 Em:0432:0RMI F:2010:M0I0 G7:0212:0RIM Am:2000:M000  GCEA-C-Dur.svg\n")
     }
     # if running via Rscript
     argv=commandArgs()
@@ -382,6 +381,13 @@ if (sys.nframe() == 0L && !interactive()) {
         print("Not yet implemented")
     } else if (any(grepl("--chords",argv))) {
         idx=grep("--chords",argv)
+        lay=NULL
+        if (any(grepl("--layout",argv))) {
+            idl=grep("--layout",argv)
+            lay=argv[idl+1]
+            lay=as.numeric(strsplit(lay,",")[[1]])
+            argv=argv[-(c(idl,idl+1))]
+        }
         outfile=argv[length(argv)]
         if (!grepl("\\.(svg|pdf|png)$",outfile)) {
             print("Error: last argument must be an outfile with extension pdf, png, svg or tikz!\n")
@@ -389,19 +395,28 @@ if (sys.nframe() == 0L && !interactive()) {
             print("Error: The chord is missing try chords.R --chords Fadd9:XX3213:00RMIP Fadd9.png")
         } else {
             chrds=argv[(idx+1):(length(argv)-1)]
+            w=6
+            h=8
+            if (is.null(lay[1])) {
+                w=w*length(chrds)
+            } else {
+                w=w*lay[2]
+                h=h*lay[1]
+            }
             ext=gsub(".+\\.","",outfile)
             if (ext=="pdf") {
-                pdf(outfile,width=6*length(chrds),height=8)
+                pdf(outfile,width=w,height=h)
             } else if (ext == "png") {
-                png(outfile,width=400*length(chrds),height=480)
-            } else {
+                png(outfile,width=w*70*length(chrds),height=h*70)
+            } else if (ext == "svg") {
+                svg(outfile,width=w,height=h)
+            } else{
                 stop("svg and tikz not yet implemented")
             }
-            if (length(chords)>3) {
-                rows=floor(length(chords)/3)+1
-                par(mfrow=c(rows,3),mai=c(0.4,0.0,0.4,0.0),omi=c(0.1,0.1,0.4,0.1))
-            } else {
+            if (is.null(lay)) {
                 par(mfrow=c(1,length(chrds)),mai=c(0.4,0.0,0.4,0.0),omi=c(0.1,0.1,0.4,0.1))
+            } else {
+                par(mfrow=c(lay[1],lay[2]),mai=c(0.4,0.0,0.4,0.0),omi=c(0.1,0.1,0.4,0.1))
             }
             for (chrd in chrds) {
                 opt=strsplit(chrd,":")[[1]]
