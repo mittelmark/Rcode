@@ -6,6 +6,7 @@ This is a repository with single file R-scripts and some R tutorials.
 
 * Single file R-scripts
     * [bkcd.R](#bkcd)  - xkcd like plots using base graphicsfunctions and operators
+    * [chords.R](#chords) - draw chord diagrams for fretted instruments like Guitar and Ukulele using R
     * [sbi.R](#sbi)  - R functions for the course Statistical Bioinformatics
 
 * Tutorials
@@ -31,7 +32,18 @@ Here an example, the internal workflow to create such plots written with script 
 
 ![](bkcd/tikz-flowchart.png)
 
-This code is based on example code given on the tex-stackexchange see [here](https://tex.stackexchange.com/questions/74878/create-xkcd-style-diagram-in-tex).
+### chords.R
+<a name="chords"> </a>
+
+`chords.R`  - draw chord diagrams for fretted instruments like Guitar and Ukulele using R
+
+* Download: [chords.R](https://raw.githubusercontent.com/mittelmark/Rcode/main/chords/chords.R)
+* Documentation: [chords.html](https://htmlpreview.github.io/?https://github.com/mittelmark/Rcode/blob/master/chords/chords.html)
+
+Here an example, the standard chords in a C-major scale for an Ukulele in tuning GCEA.
+
+![](chords/uke-chords.png)
+
 
 ### sbi.R
 <a name="sbi"> </a>
