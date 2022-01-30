@@ -92,4 +92,4 @@ Here a collection to interesting R projects, blogs etc.
 * [RcppArmadillo](https://github.com/RcppCore/RcppArmadillo)
 * [diagram](https://cran.r-project.org/web/packages/diagram/index.html)
 * [shape](https://cran.r-project.org/web/packages/shape/index.html)
-
+* [extrafont](https://github.com/wch/extrafont)
