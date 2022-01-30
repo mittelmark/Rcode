@@ -40,7 +40,7 @@ Here an example, the internal workflow to create such plots written with script 
 * Download: [chords.R](https://raw.githubusercontent.com/mittelmark/Rcode/main/chords/chords.R)
 * Documentation: [chords.html](https://htmlpreview.github.io/?https://github.com/mittelmark/Rcode/blob/master/chords/chords.html)
 
-Here an example, some nonee standard chords  for an Ukulele in tuning of GCEA.
+Here an example, some non-standard chords for an Ukulele in the GCEA-tuning.
 
 ![](chords/uke-chords.png)
 
