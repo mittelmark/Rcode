@@ -1,8 +1,8 @@
 #!/usr/bin/env Rscript
 #' ---
 #' title: Plot chord diagrams for string instruments using R
-#' author: Detlef Groth, University of Potsdam
-#' date: 2022-01-30
+#' author: Detlef Groth, Schwielowsee, Germany
+#' date: 2022-02-12
 #' ---
 #' 
 #' ## NAME
@@ -16,7 +16,10 @@
 #' * [DESCRIPTION](#description)
 #' * [USAGE](#usage)
 #' * [FUNCTIONS](#functions)
-#'     * [chords$chord](#chord) - generate chord diagrams for six-string inststruments like the guitar
+#'     * [chords$chord](#chord) - generate chord diagrams for six-string instruments like the guitar
+#'     * [chords$halfsteps](#halfsteps) - calculate the distance between two notes
+#'     * [chords$notes](#notes) - display fretboard note positions for string instruments like Guitar and Ukulele
+#'     * [chords$picking](#picking) - generate fingerpicking diagrams  for string instruments like  Guitar and Ukulele
 #' * [EXAMPLES](#examples)
 #' * [CITATION](#citation)
 #' * [DOCUMENTATION](#documentation)
@@ -67,7 +70,9 @@
 #' 
 #' ### Source chords.R
 #' 
-#' To use the functions in your own R programs and analysis just source the file `bkcd.R` into your R application. It is recommended to place the file into the R folder in your HOME directory.
+#' To use the functions in your own R programs and analysis just source the 
+#' file `chords.R` into your R application. It is in principle recommended to place the 
+#' file into the R folder in your HOME directory.
 #'
 #' ```{r label=source}
 #' source("chords.R")
@@ -108,7 +113,7 @@
 #' 
 
 chords=new.env()
-chords$VERSION = "2022.01.30"
+chords$VERSION = "2022.02.12"
 .calls=sys.calls()
 srx=grep("^source",.calls)
 idx=srx[length(srx)]
@@ -120,9 +125,9 @@ rm(.calls,srx,idx)
 #'
 #' <a name="chord"> </a>
 #' 
-#' **chords$chord(which=c(1,2))** 
+#' **chords$chord(chord,positions,fingerings,...)** 
 #' 
-#' > Creates xkcd compatible axes.
+#' > Creates a chord chart for string instruments such as Guitar and Ukulele..
 #' 
 #' > This function creates ...
 #' 
@@ -131,7 +136,8 @@ rm(.calls,srx,idx)
 #' > - _tuning_ - character string which will be displayed at the bottom, if empty not shown, default: "EADGBE"
 #'   - _chord_  - the chord name which will be shown on top, if emtpy nothing will be shown, default: "D"
 #'   - _nfrets_ - number of frets to be displayed, default: 5
-#'   - _cex_    - scaling factor for fontsizes, default: 1
+#'   - _cex_    - scaling factor for text, default: 1
+#'   - _cex.pch_ - scaling character for the plotting symbols, default: 1
 #'   - _positions_ - indicator at which fret to press the string, X means skipping, 0 (zero) not fretting the string, default: "XX0232"
 #'   - _fingerings_ - which finger to choose (IMRP syntax - Index, Middle, Ring, Pinky), default: "000IRM"
 #'    - _family_     the font family to be used for all the text
@@ -154,7 +160,7 @@ rm(.calls,srx,idx)
 
 
 chords$chord = function (tuning="EADGBE",chord="D",nfrets=5,
-                         cex=1,positions="XX0232",
+                         cex=1,cex.pch=1,positions="XX0232",
                          fingerings="000IRM",family="Helvetica") {
     circle <- function(length = 99,scale=1, height=1, width=1) {
         k <- seq(0, 2 * pi, length = length)
@@ -164,6 +170,19 @@ chords$chord = function (tuning="EADGBE",chord="D",nfrets=5,
         xa=xa*width
         return(list(x=xa*-1,y=ya))
     }
+    cross <- function (height=1,width=1) {
+        M=matrix(c(0, 0, 0.5, 0.5, 0, 1, 0.5,0.5, 1,1, 0.5, 0.5, 1, 0, 0.5, 0.5, 0,0),ncol=2,byrow=TRUE)
+        xa=M[,1]*height-0.5
+        ya=M[,2]*width-0.5
+        return(list(x=xa*-1,y=ya))
+    }
+    plus <- function (height=1,width=1) {
+        M=matrix(c(0, 0.5, 0.5, 0.5, 0.5, 0, 0.5,0.5, 1,0.5, 
+                   0.5, 0.5, 0.5,1, 0.5, 0.5, 0,0.5),ncol=2,byrow=TRUE)
+        xa=M[,1]*height-0.5
+        ya=M[,2]*width-0.5
+        return(list(x=xa*-1,y=ya))
+    }
     par(pty="s")
     ylim=c(120,0)
     if (chord == "0") {
@@ -171,7 +190,7 @@ chords$chord = function (tuning="EADGBE",chord="D",nfrets=5,
     } 
     plot(1,type="n",xlim=c(20,90),ylim=ylim,xlab="",ylab="",axes=FALSE, asp=1)
     if (chord != "0") {
-        mtext(side=3,chord,line=-1,cex=cex*3.5,family=family)
+        mtext(side=3,chord,line=0,cex=cex*2.5,family=family)
     } 
     start=10
     incr=(90-10)/(nchar(positions)-1)
@@ -179,18 +198,25 @@ chords$chord = function (tuning="EADGBE",chord="D",nfrets=5,
     lines(c(10,90),y=c(20,20),lwd=6)
     # strings
     circ=circle()
+    cross=cross()
+    plus=plus()
     p.usr=par("usr")
     xdim=p.usr[2]-p.usr[1]
     ydim=p.usr[4]-p.usr[3]
-    circ$x=circ$x/10*xdim*cex
-    circ$y=circ$y/10*ydim*cex
+    circ$x=circ$x/10*xdim*cex.pch
+    circ$y=circ$y/10*ydim*cex.pch
+    cross$x=cross$x/10*xdim*cex.pch*0.5
+    cross$y=cross$y/10*ydim*cex.pch*0.5
+    plus$x=plus$x/10*xdim*cex.pch*0.5
+    plus$y=plus$y/10*ydim*cex.pch*0.5
     for (i in 0:(nchar(positions)-1)) {
         pos=substr(positions,i+1,i+1)
         if (pos == "X") {
-            text(x=start+i*incr,y=10,"X",cex=cex*3,family=family)
+            polygon(x=cross$x+start+i*incr,y=10+cross$y,lwd=3*cex.pch)
+            #text(x=start+i*incr,y=10,"X",cex=cex*3,family=family)
         } else if (pos == "0") {
-            text(x=start+i*incr,y=10,"O",cex=cex*3,family=family)
-            #polygon(x=circ$x+start+i*incr,y=circ$y+10)
+            #text(x=start+i*incr,y=10,"O",cex=cex*3,family=family)
+            polygon(x=circ$x+start+i*incr,y=circ$y+10)
         }
 
         lines(x=rep(start+i*incr,2),y=c(100,20),lwd=2)
@@ -200,7 +226,8 @@ chords$chord = function (tuning="EADGBE",chord="D",nfrets=5,
     for (i in 1:nfrets) {
         lines(x=c(10,90),y=rep(20+i*yincr,2))
         if ( i %in% c(3,5) ) {
-            text(x=50,y=20+(i-0.5)*yincr,"+",cex=cex*3,family=family)
+            #text(x=50,y=20+(i-0.5)*yincr,"+",cex=cex*3,family=family)
+            polygon(x=plus$x+50,y=plus$y+20+(i-0.5)*yincr,lwd=2*cex.pch)
         }
     }
     # positions
@@ -224,15 +251,179 @@ chords$chord = function (tuning="EADGBE",chord="D",nfrets=5,
     for (i in 0:(nchar(fingerings)-1)) {
         pos=substr(fingerings,i+1,i+1)
         if (pos != "0") {
-            text(x=start+i*incr,y=110,pos,cex=cex*2.2,family=family)
+            text(x=start+i*incr,y=110,pos,cex=cex*1.8,family=family)
         } 
     }
     # Tuning
     for (i in 0:(nchar(tuning)-1)) {
         tune=substr(tuning,i+1,i+1)
-        text(x=start+i*incr,y=120,tune,cex=cex*2,family=family)
+        text(x=start+i*incr,y=120,tune,cex=cex*1.8,family=family)
     }
 }
+
+#' <a name="halfsteps"> </a>
+#' 
+#' **chords$halfsteps(n1,n1)** 
+#' 
+#' > Return the number of halfsteps from note n1 to note n2.
+#' 
+#' > Arguments:
+#' 
+#' > - _n1_ - first note
+#'   - _n2_  - second note
+#'
+#' > Returns: number of halfsteps to go from note 1 to note up the scale.
+#' 
+#' > Examples:
+#' 
+#' > ```{r}
+#' chords$halfsteps('C','C')
+#' chords$halfsteps('C','D')
+#' chords$halfsteps('D','C')
+#' chords$halfsteps('B','A#')
+#' chords$halfsteps('B','Bb')
+#' > ```
+#' 
+
+chords$halfsteps = function (n1,n2) {
+    map=c("A#","Bb","C#","Db","D#","Eb","F#","Gb","G#","Ab")
+   for (i in 1:(length(map)/2)) {
+        n1=gsub(map[i*2-1],map[i*2],n1)
+        n2=gsub(map[i*2-1],map[i*2],n2)
+    }
+    notes=c("C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B")
+    idx1=which(notes==n1)
+    idx2=which(notes==n2)
+    n=idx2-idx1
+    if (n>=0) {
+        return(n)
+    } else {
+        return(12+n)
+    }
+}
+#' <a name="notes"> </a>
+#' 
+#' **chords$notes(nfrets,x,y,labels, ...)** 
+#' 
+#' > Creates fretboard plots for note display for string instruments such as
+#'   Guitar or Ukulele.
+#' 
+#' > Arguments:
+#' 
+#' > - _nfrets_ - the number of frets to display, default: 5
+#'   - _nstrings_  - the number of strings of the instrument, default: 4
+#'   - _x_ - x positions of the notes, default: c(0,0,0,2,3,3)
+#'   - _y_ - y positions of the notes, default: y=c(2,3,4,2,3,4),
+#'   - _labels_ - character vector for labels placed on the notes, default: empty strings
+#'   - _col_ - color(s) for the plot symbol, default: 'grey90'
+#'   - _..._  - additional  arguments forwarded to the plot function
+#'
+#' > Examples:
+#' 
+#' > Below an example for the pentatonic notes of the C-major scale for a standard Ukulele.
+#' 
+#' > ```{r label=notes,results="hide",cache=FALSE,fig.width=10,fig.height=5,fig.cap=""}
+#' par(mfrow=c(1,2),mai=c(0.1,0.2,0.5,0.1),omi=c(0.2,0.3,0.6,0.2))
+#' chords$notes(nfrets=4,
+#'      x=c(0,0,0,0,2,3,3,2), y=c(1,2,3,4,2,3,4,1),
+#'      col=c("grey90","salmon",rep('grey90',4),'salmon'),
+#'      labels=c("G","C","E","A","D","G","C","A"))
+#' text(2.4,2.5,"X",cex=2)
+#' chords$notes(nfrets=4,nstrings=6,
+#'      x=c(rep(0,6),3, 2, 2, 1, 3, 3, 3), y=c(1:6,2, 3,4, 5, 5, 6, 1),
+#'      col=c(rep("grey90",4),'white','grey90','salmon',rep('grey90',2),'salmon',rep('grey90',2)),
+#'      labels=c("E","A","D","G","B","E", "C", "E", "A","C","D","G", "G"))
+#' text(2.4,3.5,"X",cex=1.5)
+#' mtext("C-Dur Pentatonic Scales",side=3,outer=TRUE,cex=2,line=-1)
+#' > ```
+#' 
+chords$notes = function (nfrets=5,nstrings=4,lwd=4,
+                         x=c(0,0,0,2,3,3),
+                         y=c(2,3,4,2,3,4),
+                         labels=rep('',length(x)),
+                         col=rep('grey90',length(x)), ...) {
+    plot(1,type="n",xlab="",ylab="",
+        xlim=c(-0.5,nfrets),
+        ylim=c(0.5,nstrings+0.5),
+        axes=FALSE,...)
+    for (i in 1:nstrings) {
+        lines(x=c(0,nfrets),y=c(i,i),lwd=lwd)
+    }
+    for (i in 0:nfrets) {
+        lines(x=c(i,i),y=c(1,nstrings),lwd=lwd)
+    }
+    if (length(x)>0) {
+        points(x-0.3,y,col=col,cex=6,pch=19)
+    } 
+    if (length(labels)> 0) {
+        text(x-0.3,y,labels=labels)
+    }
+}
+
+#' <a name="picking"> </a>
+#' 
+#' **chords$picking(x,y,length,labels, ...)** 
+#' 
+#' > Creates fingerpicking tabulature for string instruments such as
+#'   Guitar or Ukulele.
+#' 
+#' > Arguments:
+#' 
+#' > - _strings_ - the strings of the instrument as character vector, default: character string which will be displayed at the bottom, if empty not shown, default: c("D","G","B","E")
+#'   - _length_  - length of the picking pattern, default: 8
+#'   - _x_ - x positions of the picking pattern, default: 1:8
+#'   - _y_ - y positions, position 1 is the lower string, default: y=c(2,3,1,4,2,3,1,4)
+#'   - _labels_ - character vector for labels placed on top of the picking symbols, default: rep(c("T","I","T","R"),2)
+#'   - _col_ - color for the plot symbol, default: 'grey90'
+#'   - _lwd_    - lwd for strings and vertical lines, default: 4
+#'   - _cex.main_ - scaling size for the title, default: 3
+#'   - _..._  - additional  arguments forwarded to the plot function
+#'
+#' > Examples:
+#' 
+#' > Below examples for a Bariton Ukulele, a standard Ukulele and a Guitar.
+#' 
+#' > ```{r label=picking,fig=FALSE,results="hide",cache=FALSE,fig.width=6,fig.height=12,fig.cap=""}
+#' par(mfrow=c(3,1),mai=c(0.1,0.5,0.5,0.1))
+#' 
+#' picking=chords$picking
+#' picking(x=c(1,2,2, 3,4,4, 5,6,6, 7,8,8),
+#'             y=rep(c(2,3,4),4),
+#'             labels=rep(c("T","I","M"),4),
+#'             main="Bariton Ukulele",cex.main=3)
+#' picking(strings=c("E","A","D","G","B","E"),
+#'         x=1:8,y=c(2,4,5,4,6,4,5,4),
+#'             labels=c(0,2,1,2,0,2,1,2),
+#'             main="Guitar (Am)",cex.main=3)
+#' picking(strings=c("E","A","D","G","B","E"),
+#'         x=1:8,y=c(1,4,5,4,6,4,5,4),
+#'             labels=rep(0,8),cex=1.2,
+#'             main="Guitar (Em) - cex=1.2",cex.main=3)
+#' > ```
+#' 
+
+chords$picking = function (strings=c("D","G","B","E"),
+                           length=8,x=1:8,y=c(2,3,1,4,2,3,1,4),
+                           labels=rep(c("T","I","T","R"),2),
+                           col=rep("grey90",length(x)),
+                           lwd=4,cex=1,axis2=TRUE,...) {
+    nstr=length(strings)
+    plot(1,type="n",xlab="",ylab="",
+        xlim=c(0.5,length+0.5),
+        ylim=c(0.5,nstr+0.5),
+        axes=FALSE,...)
+    
+    abline(h=1:nstr,lwd=lwd)
+    if (axis2) {
+        axis(2,labels=strings,at=1:nstr,cex.axis=cex*2,lwd=4)
+    } else {
+        axis(2,labels=rep('',nstr),at=1:nstr,lwd=0,lwd.ticks=4)
+    }
+    axis(4,at=1:nstr,labels=rep('',nstr),lwd=4)
+    points(x,y,pch=19,cex=cex*8,col=col)
+    text(x,y,labels,cex=cex*1.5)
+}
+
 #'
 #' ## EXAMPLES
 #' <a name="examples"> </a>
@@ -263,6 +454,52 @@ chords$chord = function (tuning="EADGBE",chord="D",nfrets=5,
 #' mtext("Ukulele (GCEA)",side=3,outer=TRUE,cex=2)
 #' > ```
 #' 
+#' Let's now create a Guitar picking pattern over three chords 
+#' with indication of the fretted strings, not with indications of the used finger:
+#' 
+#' > ```{r label=pick3,fig.width=12,fig.height=5,fig.cap=""}
+#' par(mfrow=c(1,3),mai=c(0.0,0.1,0.6,0.0),omi=c(0.5,0.5,0.5,0.5))
+#' picking=chords$picking
+#' col="cornsilk"
+#' picking(strings=c("E","A","D","G","B","E"),
+#'         x=1:8,y=c(2,4,5,4,6,4,5,4),
+#'             labels=c(0,2,1,2,0,2,1,2),
+#'             main="Am",cex.main=3,cex=1.2,col=col)
+#' picking(strings=c("E","A","D","G","B","E"),
+#'         x=1:8,y=c(1,4,5,4,6,4,5,4),
+#'             labels=rep(0,8),axis2=FALSE,
+#'             main="Em",cex.main=3,cex=1.2,col=col)
+#' picking(strings=c("E","A","D","G","B","E"),
+#'         x=1:8,y=c(3,4,5,4,6,4,5,4),
+#'             labels=c(0,2,3,2,2,2,3,2),axis2=FALSE,
+#'             main="D",cex.main=3,cex=1.2,col=col)
+#' > ```
+#'  
+#' Setting the notes by hand,  as could be seen in the notes-plot above,  
+#' on the right positions is a little bit tedious.  
+#' Think about setting this on longer fretboard diagrams. 
+#' We can use the halfstep functionality to calculate automatically 
+#' the the right positions:
+#' 
+#' ```{r label=autoscale,fig=TRUE,fig.width=8,fig.height=4,fig.cap=""}
+#' par(mai=c(0.4,0.4,0.4,0.1))
+#' chords$notes(nfrets=8,nstrings=4,x=c(),y=c(),labels=c())
+#' i=0
+#' text(x=c(2.5,4.5,6.5,7.5),y=rep(2.5,4),'X',cex=1.5)
+#' for (str in c('G','C','E','A')) {
+#'     i=i+1
+#'     for (pn in c('C','D','E','G','A')) {
+#'        hs=chords$halfsteps(str,pn)
+#'        if (hs<9) {
+#'          col='grey90'
+#'          if (pn=='C') { col ="salmon" }
+#'          points(hs-0.5,i,col=col,pch=19,cex=6)
+#'          text(hs-0.5,i,pn,cex=1.3)
+#'        }
+#'     }
+#' }
+#' ```
+#'
 #' ## CITATION
 #' <a name="citation"> </a>
 #' 
@@ -272,18 +509,18 @@ chords$chord = function (tuning="EADGBE",chord="D",nfrets=5,
 #' # notrun
 #' @Misc{Groth2022chords,
 #'   author =   {Detlef Groth},
-#'   title =    {chords.{R} - {R} functions to create chord diagrams for string instruments.},
+#'   title =    {chords.{R} - {R} functions to create chord and fretboard diagrams for string instruments.},
 #'   howpublished = {\url{https://github.com/mittelmark/Rcode}},
 #'   year = {2022}
 #' }
 #' ```
 #' 
-#' Groth, D. (2022). chords.{R} - {R} functions to create chord diagrams for string instruments. [https://github.com/mittelmark/Rcode](https://github.com/mittelmark/Rcode)
+#' Groth, D. (2022). chords.{R} - {R} functions to create chord and fretboard diagrams for string instruments. [https://github.com/mittelmark/Rcode](https://github.com/mittelmark/Rcode)
 #' 
 #' ## DOCUMENTATION
 #' <a name="documentation"> </a>
 #' 
-#' This documentation was created directly from the file *bkcd.R* using the following commands in the terminal:
+#' This documentation was created directly from the file *chords.R* using the following commands in the terminal:
 #' 
 #' ```
 #' # notrun
@@ -313,6 +550,8 @@ chords$chord = function (tuning="EADGBE",chord="D",nfrets=5,
 #' <a name="changelog"> </a>
 #' 
 #' * 2022-01-30 (Version 0.1) - initial release
+#' * 2022-02-07 (Version 0.2) - adapting circles and crosses all to polygons
+#' * 2022-02-12 (Version 0.3) - adding fingerpicking and notes diagrams
 #' 
 #' ## DISCLAIMER
 #' 
