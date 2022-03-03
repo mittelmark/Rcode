@@ -2,21 +2,23 @@
 #' ---
 #' title: SBI 2022 - sbi.R - functions and operators
 #' author: Detlef Groth, University of Potsdam
-#' date: 2022-01-30
+#' date: 2022-03-03
 #' ---
 #' 
-#' ## R functions for Statistical Bioinformatics - 2022-01-30
+#' ## R functions for Statistical Bioinformatics - 2022-03-03
 #' 
 #' <a name="home"> </a>
 #' 
 #' This is a collection of useful functions shown in my teachings 
-#' in the course Statistical Bioinformatics using R in 2021.
+#' in the course Statistical Bioinformatics as well a few for the 
+#' course Databases and Practical Programming using R in 2021/2022.
 #' Below you find the documentation for the following functions 
 #' and operators:
 #' 
 #' Functions:
 #'
 #'   * [sbi$assoc](#assoc) - patch for assocplot to display residuals with color codes (plot).
+#'   * [sbi$bezier](#bezier) - create bezier lines using three coordinates
 #'   * [sbi$cohensD](#cohensD) - effect size for the difference between two means (stats)
 #'   * [sbi$cohensF](#cohensF) - effect size for Anova (stats)
 #'   * [sbi$cohensH](#cohensH) - effect size for 2x2 contingency tables (stats)
@@ -26,6 +28,7 @@
 #'   * [sbi$corrplot](#corrplot) - visualize a matrix of pairwise correlations (plot)
 #'   * [sbi$cor.var](#cor.var) - create data vector with a certain correlation to an other vector (stats)
 #'   * [sbi$cor.vars](#cor.vars) - create data frame with random values matching the given correlation matrix (stats)
+#'   * [sbi$chr2ord](#chr2ord) - convert factors or characters to ordinal numbers
 #'   * [sbi$cv](#cv) - coefficient of variation (stats).
 #'   * [sbi$dict](#dict) - create a key value list with unique keys (data)
 #'   * [sbi$dpairs](#dpairs) - improved pairs plot with xyplot, boxplot or assocplot depending on the variable types (plot)
@@ -42,7 +45,9 @@
 #'   * [sbi$import](#import) - module like sourcing of R files relative to the main script (package)
 #'   * [sbi$is.dict](#is.dict) - check if a list is a key-value list with unique keys (data)
 #'   * [sbi$kurtosis](#kurtosis) - fourth central moment of a distribution (stats)
+#'   * [sbi$lmPlot](#lmplot) - xy-plot with linear model and the confidence intervals (plot)
 #'   * [sbi$mhist](#mhist) - lattice like histograms (plot).
+#'   * [sbi$mkdoc](#mkdoc) - literate programming for your R-code (tool)
 #'   * [sbi$mi](#mi) - mutual information for two numerical variables or a binned table (stats)
 #'   * [sbi$modus](#modus) - get the modus for a categorical variable (stats).
 #'   * [sbi$package.deps](#package.deps) - return the dependencies of the given package (package)
@@ -55,9 +60,12 @@
 #'   * [sbi$pcor.test](#pcor.test) - calculate partial correlation and test statistics for two variables corrected for one or more others (stats)
 #'   * [sbi$readDataFiles](#readDataFiles) - read a directory of data files with the same function and settings (data).
 #'   * [sbi$report.pval](#report.pval) - report a p-value using threshold or star syntax  (stats)
+#'   * [sbi$shape](#shape) - create polygon shapes centered at given x and y coordinates (plot)
+#'   * [sbi$shell](#shell) - execute shell commands for embedding their ouput - Unix only (tool)
 #'   * [sbi$skewness](#skewness) - third central moment of a distribution (stats)
 #'   * [sbi$sem](#sem) - calculate standard error of the mean (stats)
 #'   * [sbi$smartbind](#smartbind) - combine two data frame even if the have different column names (data).
+#'   * [sbi$venn](#venn) - Venn diagram for logical relations between two and three sets (plot)
 #'
 #' Operators:
 #' 
@@ -70,6 +78,7 @@
 #' 
 #'   * FILENAME - the actual filename of the script and the path to it, can be used to source files other files with relative paths
 #'   * VERSION - the last change date of the file
+#'   * CSS - some minimal CSS code to inject into the documentation if no own CSS file is provided
 #' 
 #' ## Usage
 #' 
@@ -80,25 +89,26 @@
 #' source("sbi.R")
 #' ```
 #' 
-#' ```{r echo=FALSE,results="hide"}
+#' ```{r label=source,echo=FALSE,results="hide"}
 #' if (file.exists("sbi.R")) {
 #'  source("sbi.R")
 #' } else if (file.exists("../sbi.R")) {
 #'   source("../sbi.R")
 #' }
 #' ```
+#' 
 #' All function of this file are added to an environment variable called _sbi_. 
 #' To have a look which variables and functions exists in this namesspace you can use the function call
 #' `ls(sbi)`. Only function start ing with lowercase letters should be used in your scripts:
 #' 
-#' ```{r}
+#' ```{r label=ls}
 #' ls(sbi,pattern="^[a-z]")
 #' ```
 #' 
 
 
 sbi=new.env()
-sbi$VERSION = "2022.01.30"
+sbi$VERSION = "2022.03.03"
 # where is the file sbi.R
 # store it in the filename variable
 .calls=sys.calls()
@@ -126,7 +136,7 @@ library(MASS)
 #'
 #' > Examples:
 #' 
-#' > ```{r fig=TRUE,fig.cap=""}
+#' > ```{r label=assoc,fig=TRUE,fig.cap=""}
 #'   x <- margin.table(HairEyeColor, c(1, 2))
 #'   sbi$assoc(x)
 #' > ```
@@ -162,6 +172,76 @@ sbi$assoc <- function (...,shade=TRUE) {
     
 }
 
+#' <a name="bezier"> </a>
+#' **sbi$bezier(p1,p2,p3,...)** 
+#' 
+#' > Create bezier lines using three coordinates.
+#' 
+#' > This function creates bezier lines based on three coordinates.
+#'   For more background information consult this discussion on
+#'   [stats.stackexchange](https://stats.stackexchange.com/questions/294824/r-understanding-bezier-curves).
+#' 
+#' > Arguments:
+#' 
+#' > - _p1_ - starting point as vector of x and y
+#'   - _p2_ - curve point as vector of x and y
+#'   - _p3_ - end point as vector of x and y
+#'   - _plot_ - should the curve added to an existing plot, default: FALSE
+#'   - _arrow_ - should an error be plotted if plot=TRUE, default: FALSE
+#'   - _arrow.pos_ - where the place the arrow, between 0 and 1, default: 0.55
+#'   - _lwd_ - line width for line and arrow, default: 2
+#'   _ _..._ - other arguments forwarded to the line and the arrows function.
+#'
+#' > Returns: if plot=FALSE returns list with x and y coordinates
+#' 
+#' > Examples:
+#' 
+#' > ```{r label=bezier,fig=TRUE,fig.cap=""}
+#'  plot(1,type="n",xlim=c(0,10),ylim=c(0,10))
+#'  sbi$bezier(c(1,3),c(3,5),c(5,3),plot=TRUE,arrow=TRUE,col="red")
+#'  sbi$bezier(c(1,3),c(3,7),c(5,3),plot=TRUE,arrow=TRUE,col="red",lty=2)
+#'  sbi$bezier(c(5,3),c(3,1),c(1,3),plot=TRUE,arrow=TRUE,col="red",lty=1)
+#'  sbi$bezier(c(5,3),c(3,-1),c(1,3),plot=TRUE,arrow=TRUE,col="red",lty=2)
+#'  sbi$bezier(c(8,2),c(6,7),c(0,8),plot=TRUE,arrow=TRUE,col="blue",
+#'             lty=2,arrow.pos=0.8)
+#' > ```
+#'
+
+# https://stats.stackexchange.com/questions/294824/r-understanding-bezier-curves
+sbi$bezier <- function (p1,p2,p3,plot=FALSE,
+                        arrow=FALSE,
+                        arrow.pos=0.55,lwd=2,lty=1,...) {
+    B <- function( t, P0, P1, P2 ) {
+        (1 - t) * ( (1 - t)*P0 + t*P1 ) +
+        t       * ( (1 - t)*P1 + t*P2 ) 
+    }
+    idx=arrow.pos
+    steps=seq(0,1,by=0.02)
+    x=c()
+    y=c()
+    for (s in steps) { 
+        p=B(s,p1,p2,p3);
+        x=c(x,p[1])
+        y=c(y,p[2])
+    }
+    if (is.null(idx)) {
+        idx=round(length(x)/2)-1
+    } else {
+        idx=round(length(x)*idx)
+    }
+    if (plot) {
+        points(x,y,type="l",lwd=lwd,lty=lty,...)
+
+        if (arrow) {
+            for (i in c(15,10,5,2)) {
+                arrows(x[idx],y[idx],x[idx+1],y[idx+1],length=0.2,angle=i,lwd=2,lty=1,...)
+            }
+        }
+    } else {
+        return(list(x=x,y=y))
+    }
+}
+
 #' 
 #' <a name='cohensD'> </a>
 #' **sbi$cohensD(num,cat,paired=FALSE)**
@@ -184,7 +264,7 @@ sbi$assoc <- function (...,shade=TRUE) {
 #' 
 #' > Examples:
 #' 
-#' > ```{r}
+#' > ```{r label=cohensD}
 #'   cohensD=sbi$cohensD
 #'   set.seed(125)
 #'   data(sleep)
@@ -242,7 +322,7 @@ sbi$cohensD <- function (num, cat,paired=FALSE) {
 #' 
 #' > Examples:
 #' 
-#' > ```{r}
+#' > ```{r label=cohensF}
 #'   data(iris)
 #'   sbi$cohensF(iris$Sepal.Width, iris$Species)
 #'   sbi$cohensF(iris$Sepal.Length, iris$Species)
@@ -275,7 +355,7 @@ sbi$cohensF <- function (x,g) {
 #' 
 #' > Examples:
 #' 
-#' > ```{r}
+#' > ```{r label=cohensH}
 #'   # data from New Eng. J. Med. 329:297-303, 1993
 #'   azt=as.table(matrix(c(76,399,129,332), byrow=TRUE,ncol=2))
 #'   rownames(azt)=c("AZT","Placebo")
@@ -312,7 +392,7 @@ sbi$cohensH <- function (tab) {
 #' 
 #' > Examples:
 #' 
-#' > ```{r}
+#' > ```{r label=cohensW}
 #'   data(Titanic)
 #'   Titanic[1,1,,]
 #'   sbi$cohensW(Titanic[1,1,,])
@@ -356,7 +436,7 @@ sbi$cohensW <- function (tab) {
 #' 
 #' > Example:
 #' 
-#' > ```{r}
+#' > ```{r label=corr}
 #'   data(swiss)
 #'   lapply(sbi$corr(swiss)[1:2],round,2)
 #' > ```
@@ -396,7 +476,7 @@ sbi$corr <- function (data,method='pearson',use='pairwise.complete.ob') {
 #' 
 #' > Example:
 #' 
-#' > ```{r fig=TRUE,fig.width=6,fig.height=6,fig.cap="Corplot with abline"}
+#' > ```{r label=corplot,fig=TRUE,fig.width=6,fig.height=6,fig.cap="Corplot with abline"}
 #'   data(swiss)
 #'   sbi$corplot(swiss$Fertility,swiss$Agriculture,
 #'     xlab="Fertility",ylab="Agriculture")
@@ -434,15 +514,15 @@ sbi$corplot = function (x,y,col='red',pch=19,cex=2,method="pearson",...) {
 #' 
 #' > Example:
 #' 
-#' > ```{r fig=TRUE,fig.width=12,fig.height=10,fig.cap=""}
-#'   data(swiss)
-#'   sw=swiss
-#'   colnames(sw)=abbreviate(colnames(swiss),6)
-#'   options(warn=-1) # avoid spearman warnings
-#'   cr=sbi$corr(sw,method='spearman')
-#'   sbi$corrplot(cr$estimate,cex.sym=8,text.lower=TRUE,
-#'      cex.r=1.5,p.mat=cr$p.value)
-#'   options(warn=0)
+#' > ```{r label=corrplot,fig=TRUE,fig.width=12,fig.height=10,fig.cap=""}
+#' data(swiss)
+#' sw=swiss
+#' colnames(sw)=abbreviate(colnames(swiss),6)
+#' options(warn=-1) # avoid spearman warnings
+#' cr=sbi$corr(sw,method='spearman')
+#' sbi$corrplot(cr$estimate,cex.sym=8,text.lower=TRUE,
+#'    cex.r=1.5,p.mat=cr$p.value)
+#' options(warn=0)
 #' > ```
 #' 
 #' > See also: [sbi$corr](#corr)
@@ -516,7 +596,7 @@ sbi$corrplot <- function (mt,text.lower=TRUE, text.upper=FALSE,
 #' > Example:
 #' 
 #' 
-#' > ```{r}
+#' > ```{r label=cor.var}
 #'   set.seed(123)
 #'   A=rnorm(300,mean=160,sd=6)
 #'   B=sbi$cor.var(A,r=0.7,mean=80,sd=4)
@@ -568,7 +648,7 @@ sbi$cor.var = function (x,r,mean=0,sd=1) {
 #' > Example:
 #' 
 #' 
-#' > ```{r}
+#' > ```{r label=cor.vars}
 #' r.mt=matrix(c(1,0.7,0.4, 0.7,1,0.3, 0.4,0.3,1),
 #'      byrow=TRUE,ncol=3)
 #' mt.vars=sbi$cor.vars(100,r.mt,c(1,10,5))
@@ -586,6 +666,40 @@ sbi$cor.vars = function (n,r.matrix,mu.vec) {
     return(data)
 }
 
+#'   * [sbi$chr2ord](chr2ord) - convert factors or characters to ordinal numbers
+#' 
+#' <a name="chr2ord"> </a>
+#' **sbi$chr2ord(x,map)** 
+#' 
+#' > Create ordinal numerical variables out of character or factor variables based on a given mapping.
+#' 
+#' > Arguments:
+#' 
+#' > - _x_ - character for factor vector
+#'   - _map_ - list with keys for the given x vector and numbers for the matching values
+#' 
+#' > Returns: numerical values for the mapping
+#' 
+#' > Example:
+#' 
+#' 
+#' > ```{r label=chr2ord}
+#' status=c("never","rare","often","always")
+#' x=sample(status,100,replace=TRUE)
+#' x=c(NA,x,NA)
+#' table(x,useNA='ifany')
+#' map=c(never=0, rare=1, often=2,always=3)
+#' table(sbi$chr2ord(x,map),useNA='ifany')
+#' > ```
+
+
+sbi$chr2ord = function (x,map) {
+    return(unlist(lapply(as.character(x),function(x) {
+          if (is.na(x)) { return(NA) }
+          return(map[[x]])
+      }
+      )))
+}
 #' 
 #' <a name="cv"> </a>
 #' **sbi$cv(x,na.rm=FALSE)** 
@@ -602,7 +716,7 @@ sbi$cor.vars = function (n,r.matrix,mu.vec) {
 #' > Example:
 #' 
 #' 
-#' > ```{r}
+#' > ```{r label=cv}
 #'   cv=sbi$cv
 #'   cv(rnorm(20,mean=100,sd=4))
 #'   cv(c(1,2,3,4))
@@ -630,7 +744,7 @@ sbi$cv <- function (x,na.rm=FALSE) {
 #' > Example:
 #' 
 #' 
-#' > ```{r}
+#' > ```{r label=dict}
 #'   options(error=print)
 #'   # list's can have duplicate entries
 #'   l=list(a=1,a=2)
@@ -681,7 +795,7 @@ sbi$dict <- function (...) {
 #' 
 #' > Example:
 #'
-#' > ```{r fig=TRUE,dpi=72,out.width=700}
+#' > ```{r label=dpairs,fig=TRUE,dpi=72,out.width=700,fig.cap=""}
 #'   data(iris)
 #'   dpairs=sbi$dpairs
 #'   par(omi = c(0.8, 0.4,0.4,0.4))
@@ -691,7 +805,7 @@ sbi$dict <- function (...) {
 #' > ```
 #'
 #'  
-#' > ```{r eval=FALSE}
+#' > ```{r label=dpairs2,eval=FALSE}
 #'   par(omi=c(0.5,0.5,0.8,0.2))
 #'   library(MASS)
 #'   btwt=birthwt; 
@@ -806,25 +920,25 @@ sbi$dpairs <- function (data,col.box='grey80',col.xy="grey60",cex.diag=2.5,
                     r=cor.test(data[,i],data[,j])
                     rs=cor.test(data[,i],data[,j],method='spearman')
                     plot(1,type='n',xlab='',ylab='',axes=FALSE,xlim=c(0,1),ylim=c(0,1))
-                    text(0.5,0.59,bquote("" ~ r[P] ~ .(sprintf(" = %.2f%s",r$estimate,report.pval(r$p.value,star=TRUE)))),cex=1.5)
-                    text(0.5,0.41,bquote("" ~ r[S] ~ .(sprintf(" = %.2f%s",rs$estimate,report.pval(rs$p.value,star=TRUE)))),cex=1.5)
+                    text(0.5,0.59,bquote("" ~ r[P] ~ .(sprintf(" = %.2f%s",r$estimate,sbi$report.pval(r$p.value,star=TRUE)))),cex=1.5)
+                    text(0.5,0.41,bquote("" ~ r[S] ~ .(sprintf(" = %.2f%s",rs$estimate,sbi$report.pval(rs$p.value,star=TRUE)))),cex=1.5)
                 } else if (class(data[,i]) == "factor" & class(data[,j]) == "factor") {
                     cw=cohensW(table(data[,i],data[,j]))
                     chsq=chisq.test(table(data[,i],data[,j]))
                     plot(1,type='n',xlab='',ylab='',axes=FALSE,xlim=c(0,1),ylim=c(0,1))
-                    text(0.5,0.5,sprintf("Cohen's w =\n%.2f %s",cw,report.pval(chsq$p.value,star=TRUE)),cex=1.5)
+                    text(0.5,0.5,sprintf("Cohen's w =\n%.2f %s",cw,sbi$report.pval(chsq$p.value,star=TRUE)),cex=1.5)
                     
                 } else if (class(data[,i]) %in% c("numeric","integer")) {
                     if (length(levels(data[,j]))==2) {
                         tt=t.test(data[,i] ~ data[,j]) 
                         cd=cohensD(data[,i],data[,j])
                         plot(1,type='n',xlab='',ylab='',axes=FALSE,xlim=c(0,1),ylim=c(0,1))
-                        text(0.5,0.5,sprintf("Cohen's d =\n%.2f %s",cd,report.pval(tt$p.value,star=TRUE)),cex=1.5)
+                        text(0.5,0.5,sprintf("Cohen's d =\n%.2f %s",cd,sbi$report.pval(tt$p.value,star=TRUE)),cex=1.5)
                     } else {
                         raov=aov(data[,i] ~ data[,j]) 
                         #recover()
                         rs=etaSquared(raov)
-                        pval=report.pval(summary(raov)[[1]][1,5],star=TRUE)
+                        pval=sbi$report.pval(summary(raov)[[1]][1,5],star=TRUE)
                         plot(1,type='n',xlab='',ylab='',axes=FALSE,xlim=c(0,1),ylim=c(0,1))
                         text(0.5,0.5,bquote(eta~2~sprintf(" = %.2f %s",rs,pval)),cex=1.5)
                     }
@@ -833,11 +947,11 @@ sbi$dpairs <- function (data,col.box='grey80',col.xy="grey60",cex.diag=2.5,
                         tt=t.test(data[,j] ~ data[,i]) 
                         cd=cohensD(data[,j],data[,i])
                         plot(1,type='n',xlab='',ylab='',axes=FALSE,xlim=c(0,1),ylim=c(0,1))
-                        text(0.5,0.5,sprintf("Cohen's d =\n%.2f %s",cd,report.pval(tt$p.value,star=TRUE)),cex=1.5)
+                        text(0.5,0.5,sprintf("Cohen's d =\n%.2f %s",cd,sbi$report.pval(tt$p.value,star=TRUE)),cex=1.5)
                     } else {
                         raov=aov(data[,j] ~ data[,i]) 
                         rs=etaSquared(raov)
-                        pval=report.pval(summary(raov)[[1]][1,5],star=TRUE)
+                        pval=sbi$report.pval(summary(raov)[[1]][1,5],star=TRUE)
                         plot(1,type='n',xlab='',ylab='',axes=FALSE,xlim=c(0,1),ylim=c(0,1))
                         val=sprintf("%.2f %s",rs,pval)
                         text(0.5,0.5,bquote("" ~ eta^2 ~ " = " ~ .(val)),cex=1.5)
@@ -911,15 +1025,15 @@ sbi$dpairs.legend <- function (labels,col='grey80',pch=15,side="bottom",cex=2) {
 #' 
 #' > Example:
 #' 
-#' > ```{r eval=TRUE}
-#'   data(iris)
-#'   ir=iris
-#'   ir[c(1,3),1]=NA
-#'   ir[2,2]=NA
-#'   ir[4,4]=NA
-#'   head(ir)
-#'   head(na.omit(ir)) # removes all rows with an NA somewhere
-#'   head(sbi$drop_na(ir,1:2)) # just checks the first two columns
+#' > ```{r label=dropna}
+#' data(iris)
+#' ir=iris
+#' ir[c(1,3),1]=NA
+#' ir[2,2]=NA
+#' ir[4,4]=NA
+#' head(ir)
+#' head(na.omit(ir)) # removes all rows with an NA somewhere
+#' head(sbi$drop_na(ir,1:2)) # just checks the first two columns
 #' > ```
 #' 
 
@@ -944,7 +1058,7 @@ sbi$drop_na = function (x,cols) {
 #' > Example:
 #' 
 #' 
-#' > ```{r}
+#' > ```{r label=epsilon}
 #'   data(iris)
 #'   sbi$epsilonSquared(iris$Sepal.Length,iris$Species)
 #'   # two factor example as well for wilcox.test possible
@@ -988,7 +1102,7 @@ sbi$epsilonSquared <- function (x,y) {
 #' > Example:
 #' 
 #' 
-#' > ```{r}
+#' > ```{r label=eta}
 #'   data(iris)
 #'   etaSquared=sbi$etaSquared
 #'   etaSquared(iris$Sepal.Length,iris$Species)
@@ -1041,7 +1155,7 @@ sbi$etaSquared <- function (x,y=NULL) {
 #' > Example:
 #' 
 #' 
-#' > ```{r}
+#' > ```{r label=file.cat}
 #'   sbi.code=sbi$file.cat(sbi$FILENAME)
 #'   nchar(sbi.code)
 #' > ```
@@ -1070,7 +1184,7 @@ sbi$file.cat <- function (filename) {
 #' > Example:
 #' 
 #' 
-#' > ```{r}
+#' > ```{r label=file.head}
 #'   sbi$file.head(sbi$FILENAME,n=10)
 #' > ```
 #' 
@@ -1090,91 +1204,218 @@ sbi$file.head = function (filename,n=6) {
 #' <a name="flow"> </a>
 #' **sbi$flow(x,y,lab="",...)** 
 #' 
-#' > Very simple flowcharter. For more advanced flowcharts use package like *diagram*.
+#' > Very simple flowcharter. For more advanced flowcharts use package like [diagram](https://cran.r-project.org/web/packages/diagram).
 #' 
 #' > Arguments:
 #' 
-#' > - _x_ - coordinate in chessboard notation like 'A1', 'C3', etc
-#'   - _y_ - coordinate in chessboard notation like 'A1', if  given we assume a line or arrow, otherwise a node, default: NULL
-#'   - _lab_ - label for a node shown as rectangle, default: ""
-#'   - _type_ - if y is given, either "arrow" or "line", default: "arrow"
+#' > - _x_ - coordinate(s) in chessboard notation like 'A1', 'C3', etc
+#'   - _y_ - coordinate(s) in chessboard notation like 'A1', if  given we assume a line or arrow, otherwise a node, default: NULL
+#'   - _z_ - coordinate(s) in chessboard notation, x, y and z are used for bezier curves/arrow, default: NULL
+#'   - _x.incr_ - optional increment in x direction, default: 0
+#'   - _y.incr_ - options increment in y direction, default: 0
+#'   - _lab_ - label(s) for a node shown as rectangle, default: ""
+#'   _ _family_ - the font family for the node labels, an be only set at initialzation of the flowchart, so different fonts for different labels are not possible, default: 'Arial'
+#'   - _type_ - if y is given, either "arrow" or "line", in case only x is given either "text", "rect", "ellipse", "circle","hexagon" or "diamond", default: "arrow" or "rect"
 #'   - _axes_ - should to plot axes been shown, default: FALSE
 #'   - _lwd_ - linewidth for arrows or lines, default: 2
-#'   - _radx_ - rectangle width, default: 0.8
-#'   - _radx_ - rectangle height, default: 0.7  
+#'   - _width_ - width of shape, default: 0.6
+#'   - _height_ - height of shape, default: 0.3  
 #'   - _cex_  - text expansion for rectangle labels, default: 1
-#'   - _col_ - background color for rectangle, default: "skyblue"
+#'   - _col_ - background color(s) for rectangle, default: "skyblue"
 #'   - _border_ - border color for rectangle, default: "black"
 #'   - _arrow.col_ - color for arrows and lines, default: "black"
+#'   - _cut_ - relative position (0..1) where to place the arrow, default: 0.6
 #'   - _shadow_ - should a shadow been shown around the rectangle, default: TRUE
 #'   - _shadow.col_ - color of the shadow, default: "#bbbbbb90"
-#'   _ _..._ - remaining arguments delegated to the plot function, the rectangle function and so on
+#'   - _..._ - remaining arguments delegated to the plot function, the rectangle function and so on
+#' 
+#' > **Hint**: If plural is given such as coordinates(s), label(s), colors(s) arguments can be given as well as vectors, having the same length as x.
 #' 
 #' > Returns: Nothing.
 #' 
 #' > Example:
 #' 
 #' 
-#' > ```{r fig=TRUE}
+#' > ```{r label=flow,fig=TRUE,results="hide",fig.cap=""}
+#' font="Arial"
+#' # setup a more interesting font if available
+#' # stick to Arial if not
+#' if (require("extrafont",quietly=TRUE)) {
+#'    loadfonts(device="pdf",quiet=TRUE)
+#'    if ("Albertus Medium" %in% extrafont::fonts()) {
+#'         font="Albertus Medium"
+#'    } else if ("Georgia" %in% extrafont::fonts()) {
+#'         font="Georgia"
+#'    }
+#' } 
 #' flow=sbi$flow
-#' flow(4,4,axes=TRUE) # grid setup, axes just for fun
-#' grid()              # make it more chessboard like
-#' flow("A1","C1",lwd=3) # first edges
+#' flow(4,4,axes=TRUE,cex.axis=3,family=font) 
+#' grid()                       # make it more chessboard like
+#' # if you are happy with the layout you could remove at the end
+#' # the axes and grid commands / options at the beginning
+#' flow("A1","C1",lwd=3)        # first edges
 #' flow("A1","B4",lwd=3)
+#' flow("B4","D4",lwd=3,cut=0.9)       # arrow around the corner
+#' flow("D4","D3",lwd=3,type="line")   # ... continued
 #' flow("C1","D3",lwd=3,arrow.col="salmon",type="line") # a line
-#' flow("A1",lab="Hello",radx=1,rady=0.8,cex=1.2) # then nodes
-#' flow("C1",lab="World!",col="salmon",radx=1,rady=0.8,cex=1.2)
+#' flow("C1","D1",lwd=3,arrow.col="salmon",type="line") # a line
+#' flow("D1","D3",lwd=3,arrow.col="salmon",type="line") # ...
+#' # Bezier lines
+#' flow(x="A1",y="B3",z="C1",lwd=3,cut=0.55)
+#' flow(x="B4",y="B3",z="C3",type="line",lwd=3,col="salmon")
+#' # nodes
+#' flow("A1",lab="Hello",width=1.2,height=0.8,cex=1.2) # then nodes
+#' flow("C1",lab="World!",col="salmon",width=1.2,height=0.8,cex=1.2)
 #' flow("B4",lab="B4",cex=1.2)
-#' flow("D3",lab="This is\nD3",cex=1.2,col="cornsilk")
+#' flow("D3",lab="This is\nD3",cex=1.2,col="cornsilk",height=0.7)
+#' # other shapes
+#' flow("A3",lab="A3",type="ellipse",cex=1.2,width=0.6,height=0.4)
+#' flow("A2",lab="A2",type="text",cex=2)
+#' flow("A4",lab="A4",type="circle",cex=1.2,width=0.5,height=0.5)
+#' flow("C3",lab="C3",type="diamond",cex=1.2,width=0.8,height=0.8)
+#' flow("C2",lab="C2",type="hexagon",cex=1.2,width=0.8,height=0.6)
+#' # basic draw operations still work
+#' rect(2,2.3,2.5,2.8,lty=2)
+#' text(2.25,2.55,"X",family=font)
+#' title(paste("Flowchart done with",font),family=font)
 #' > ```
+#' 
+#' Here an other example with a more regular shape. The C-Major and the C-pentatonic scale on an Ukulele:
+#' 
+#' > ```{r label=flow2,fig=TRUE,results="hide",fig.cap="",fig.width=9,fig.height=6}
+#' par(mai=c(0.1,0.1,0.6,0.1))
+#' flow=sbi$flow
+#' flow(6,5,axes=FALSE,cex.axis=3,family=font,asp=0) 
+#' # grid() 
+#' # strings
+#' flow(c("B2","B3","B4","B5"),
+#'      c("F2","F3","F4","F5"),lwd=3,type="line") 
+#' # bridge
+#' flow("B2","B5",lwd=5,type="line")
+#' # frets
+#' flow(c("C2","D2","E2","F2"),
+#'      c("C5","D5","E5","F5"),lwd=3,type="line")
+#' # string notes
+#' flow(c("A2","A3","A4","A5"),
+#'  lab=c("G" ,"C" ,"E" ,"A"),type="text",cex=1.5)
+#' #  notes (as loop example)
+#' df=data.frame(
+#'     pos=c("A3","C3","A4","B4","D4","A5","C5","D5"),
+#'     note=strsplit("C D E F G A B C", " ")[[1]],
+#'     col=strsplit("salmon skyblue skyblue cornsilk skyblue skyblue cornsilk salmon", " ")[[1]]);
+#' for (i in 1:nrow(df)) {
+#'    flow(df$pos[i],x.incr=0.5,type="circle",width=0.5,height=0.7,
+#'     lab=df$note[i],col=df$col[i],cex=1.2)
+#' }
+#' # still direct setup is possible
+#' text(2,1.3,"Major scale",pos=4,family=font,cex=1.5)
+#' text(2,0.7,"Pentatonic scale",pos=4,family=font,cex=1.5)
+#' points(c(4,4.5,5),c(1.3,1.3,1.3),pch=21,cex=4,bg=c("salmon","skyblue","cornsilk"),col=1)
+#' points(c(4,4.5),c(0.7,0.7),pch=21,cex=4,bg=c("salmon","skyblue"),col=1)
+#' mtext("C Major scale",side=3,cex=2,family=font)
+#' > ```
+#' 
+#' > See also: [Resolve issue with extrafont](https://stackoverflow.com/questions/61204259/how-can-i-resolve-the-no-font-name-issue-when-importing-fonts-into-r-using-ext)
 #' 
 
 #par(pty="s")
 
-sbi$flow = function (x,y=NULL,lab="",type="arrow",axes=FALSE,lwd=2,
-                     radx=0.8,rady=0.7,cex=1,col="skyblue",
-                     border="black",arrow.col="black",
+sbi$flow = function (x,y=NULL,z=NULL,x.incr=0,y.incr=0,
+                     lab="",family="Arial",
+                     type="arrow",axes=FALSE,lwd=2,
+                     width=1,height=0.5,cex=1,col="skyblue",
+                     border="black",arrow.col="black",cut=0.6,
                      shadow=TRUE,shadow.col="#bbbbbb99",...) {
      f2v = function (x) {
          col=substr(x,1,1)
-         col=as.integer(which(LETTERS==col))
-         row=as.integer(substr(x,2,2))
+         col=as.integer(which(LETTERS==col))+x.incr
+         row=as.integer(substr(x,2,2))+y.incr
          return(c(col,row))
      }
-    if (is.numeric(x) & is.numeric(y)) {
-        plot(1,type="n",xlim=c(0.5,x+0.5),ylim=c(0.5,y+0.5),
-             xlab="",ylab="",axes=FALSE,...)
-        if (axes) {
-            axis(2,lwd=0)
-            axis(1,at=1:x,labels=LETTERS[1:x],lwd=0)
-            box()
-        }
-    } else if (grepl("^[A-Z][0-9]+",x) & (!is.null(y) && grepl("^[A-Z][0-9]+",y))) {
-        # arrow or line
-        from=f2v(x)
-        to=f2v(y)
-        if (type == "arrow") {
-            hx=(from[1]+to[1])/2
-            hy=(from[2]+to[2])/2
-            #arrows(from[1],from[2],hx,hy,length=0.15,angle=20,lwd=2)
-            arrows(hx,hy,to[1],to[2],lwd=lwd,code=0,col=arrow.col,...)
-            arrows(from[1],from[2],hx,hy,length=0.05*lwd,angle=20,lwd=lwd,col=arrow.col,...)
-        } else {
-            lines(x=c(from[1],to[1]),y=c(from[2],to[2]),lwd=lwd,col=arrow.col,...)
-        }
-    } else if (grepl("^[A-Z][0-9]+",x)) {
-        pos=f2v(x)
-        if (shadow) {
-            rect((pos[1]-0.5*radx)+0.1,(pos[2]-0.5*rady)-0.1,
-                 (pos[1]+0.5*radx)+0.1,(pos[2]+0.5*rady)-0.1,
-                 col=shadow.col,border=shadow.col,...)
-        }
-        rect(pos[1]-0.5*radx,pos[2]-0.5*rady,
-             pos[1]+0.5*radx,pos[2]+0.5*rady,
-             col=col,border=border,...)
-        text(pos[1],pos[2],lab,cex=cex,...)
-    }
-      
+     # coordinates as vectors ?
+     if (length(x)>1) {
+         for (i in 1:length(x)) {
+             if (length(y)==length(x)) {
+                 yi=y[i]
+             } else {
+                 yi=y
+             }
+             if (length(lab) == length(x)) {
+                 labi=lab[i]
+             } else {
+                 labi=lab
+             }
+             if (length(col) == length(x)) {
+                 coli=col[i]
+             } else {
+                 coli=col
+             }
+
+             sbi$flow(x=x[i],y=yi,x.incr=x.incr,y.incr=y.incr,
+                  lab=labi,family=family,
+                  type=type,axes=axes,lwd=lwd,
+                  width=width,height=height,cex=cex,col=coli,
+                  border=border,arrow.col=arrow.col,cut=cut,
+                  shadow=shadow,shadow.col=shadow.col,...) 
+         }
+         return()
+     }
+     if (is.numeric(x) & is.numeric(y)) {
+         # setup board
+         plot(1,type="n",xlim=c(0.5,x+0.5),ylim=c(0.5,y+0.5),
+              xlab="",ylab="",axes=FALSE,...)
+         if (axes) {
+             axis(2,lwd=0,family=family)
+             axis(1,at=1:x,labels=LETTERS[1:x],lwd=0,family=family)
+             box()
+         }
+         sbi$FLOWFONT=family                
+     } else if (grepl("^[A-Z][0-9]+",x) & (!is.null(y) && grepl("^[A-Z][0-9]+",y)) & (!is.null(z) && grepl("^[A-Z][0-9]+",z))) {
+         # arrow or line
+         from=f2v(x)
+         over=f2v(y)
+         to=f2v(z)
+         arr=FALSE
+         arrow.pos=cut
+         if (type == "arrow") {
+             arr=TRUE
+         }
+         sbi$bezier(from,over,to,plot=TRUE,arrow=arr,arrow.pos=cut,lwd=lwd,col=arrow.col)
+     } else if (grepl("^[A-Z][0-9]+",x) & (!is.null(y) && grepl("^[A-Z][0-9]+",y))) {
+         # arrow or line
+         from=f2v(x)
+         to=f2v(y)
+         if (type == "arrow") {
+             hx <- (1 - cut) * from[1] + cut * to[1]
+             hy <- (1 - cut) * from[2] + cut * to[2]
+             arrows(hx,hy,to[1],to[2],lwd=lwd,code=0,col=arrow.col,...)
+             for (a in c(20,15,10,5)) {
+                  arrows(from[1],from[2],hx,hy,length=0.05*lwd,angle=a,lwd=lwd,col=arrow.col,...)
+             }
+         } else {
+             lines(x=c(from[1],to[1]),y=c(from[2],to[2]),lwd=lwd,col=arrow.col,...)
+         }
+     } else if (grepl("^[A-Z][0-9]+",x)) {
+         pos=f2v(x)
+         if (type == "arrow") {
+             type="rectangle"
+         }
+         if (type == "ellipse") {
+             type = "circle"
+         }
+         if (type != "text") {
+             poly=sbi$shape(0,0,type=type,width=width,height=height,...)
+         }
+         if (shadow & type != "text") {
+             polygon(poly$x+pos[1]+0.05,poly$y+pos[2]-0.05,
+                     col=shadow.col,border=shadow.col)
+         } 
+         if (type != "text") {
+             polygon(poly$x+pos[1],poly$y+pos[2],
+                     col=col,border=border)
+         }
+         text(pos[1],pos[2],lab,cex=cex,family=sbi$FLOWFONT,...)
+     }
 }
 
 #'
@@ -1193,7 +1434,7 @@ sbi$flow = function (x,y=NULL,lab="",type="arrow",axes=FALSE,lwd=2,
 #' > Example:
 #' 
 #' 
-#' > ```{r}
+#' > ```{r label=fmt}
 #'   sbi$fmt('I can say {} {}!',"Hello", "World")
 #'   sbi$fmt('I can say {2} {1}!',"World", "Hello")
 #' > ```
@@ -1226,7 +1467,7 @@ sbi$fmt = function (str,...) {
 #' 
 #' > Example:
 #' 
-#' > ```{r}
+#' > ```{r label=gmean}
 #'   gmean=sbi$gmean
 #'   x=10; y=20; z = 30
 #'   gmean(c(x,y,z))
@@ -1266,7 +1507,7 @@ sbi$gmean=function(x,na.rm=FALSE) {
 #' > Example:
 #' 
 #' 
-#' > ```{r}
+#' > ```{r label=hmean}
 #'   hmean=sbi$hmean
 #'   hmean(c(60,30)) # average speed
 #'   hmean(c(60,30,0)) # speed is zero
@@ -1310,7 +1551,7 @@ sbi$hmean=function (x,na.rm=FALSE) {
 #' > The following example sources _other.R_ or _other.r_ in the same directory 
 #' as the main script.
 #' 
-#' > ```{r}
+#' > ```{r label=import}
 #'   fout = file("test.R",'w')
 #'   cat("test = function (msg) { return(paste('testing',msg)) }\n",file=fout)
 #'   close(fout)
@@ -1321,7 +1562,7 @@ sbi$hmean=function (x,na.rm=FALSE) {
 
 sbi$import <- function (basename) {
     if (interactive()) {
-        stop("import works only in R-scripts run with R-script")
+        stop("import works only in R-scripts run with Rscript")
     }
     options <- commandArgs(trailingOnly = FALSE)
     file.arg <- "--file="
@@ -1359,7 +1600,7 @@ sbi$import <- function (basename) {
 #' 
 #' > Example:
 #' 
-#' > ```{.r}
+#' > ```{.r label=input,eval=FALSE}
 #'   # notrun
 #'   x=sbi$input('Enter a numerical value: ')
 #'   x=as.numeric(x)
@@ -1390,7 +1631,7 @@ sbi$input = function (prompt="Enter: ") {
 #' 
 #' > Example:
 #' 
-#' > ```{r}
+#' > ```{r label=is.dict}
 #'   is.dict=sbi$is.dict
 #'   l=list(1,2,"b")
 #'   is.dict(l)
@@ -1403,6 +1644,142 @@ sbi$input = function (prompt="Enter: ") {
 
 sbi$is.dict <- function (l) {
     return(length(unique(names(l)))==length(l) )
+}
+
+#'
+#' <a name="mkdoc"> </a>
+#' **sbi$mkdoc(infile,cssfile="mini.css",eval=TRUE)** 
+#' 
+#' > Extract embedded Markdown documentation after `#'` and convert it into HTML.
+#' 
+#' > Arguments:
+#' 
+#' > - _infile_ - R file with embedded Markdown code (after #' comments)
+#'   - _cssfile_ - css stylesheet file, if not there a minimal css file will be created, you can modify the file later, default: mini.css
+#'   - _eval_ - should the code chunks being evaluated, default: FALSE (for security reasons)
+#' 
+#' > Returns: NULL
+#' 
+#' > Example:
+#' 
+#' > ```{r label=mkdoc,eval=FALSE}
+#' # creating sbi.html, the file you are viewing
+#' mkdoc("sbi.R",eval=TRUE) 
+#' > ```
+#' 
+
+sbi$mkdoc <- function (infile,cssfile="mini.css",eval=FALSE)  {
+    if (eval & !require("rmarkdown")) {
+        stop("library rmarkdown is required")
+    }
+    t1=Sys.time()
+    cat("converting ...", infile,"\n")
+    fin  = file(infile, "r")
+    outfile=gsub("\\.[rR][a-z]*$",".Rmd",infile)
+    htmlfile=gsub("\\.[rR][a-z]*$",".html",infile)    
+    fout = file(outfile,'w')
+    while(length((line = readLines(fin,n=1)))>0) {
+        if (grepl("^\\s*#'",line)) {
+            line=gsub("^\\s*#' ?","",line)       
+            if (!eval) {
+                line=gsub("```\\{r .+","```{r}",line)
+            }
+            cat(line,"\n",file=fout)
+        }
+    }
+    close(fin)
+    close(fout)
+    if (!file.exists(cssfile)) {
+        fout = file(cssfile,'w')
+        cat(sbi$CSS,"\n",file=fout)
+        close(fout)
+    }
+    if (!eval) {
+        system(sbi$fmt("pandoc -s -f markdown -c {1} -o {2} {3}",cssfile,htmlfile,outfile))
+    } else {
+        library(rmarkdown)
+        render(outfile,html_document(css="mini.css",theme=NULL))
+    }
+    cat("Processing done in",round(as.numeric(Sys.time()-t1,units="secs"),2),"seconds!\n")
+}
+
+#' 
+#' <a name="lmplot"> </a>
+#' **sbi$lmPlot(x,y,...)** 
+#' 
+#' > A xy-plot with linear model and the confidence intervals.
+#' 
+#' > This method can be used to visualize the confidence intervals for 
+#'   the predictions and the linear model.
+#' 
+#' > Arguments:
+#' 
+#' > - _x_ - numerical vector
+#'   - _y_ - numerical vector
+#'   - _col_ - scalar or vector for the color for the plotting character default: 'blue'
+#'   - _pch_ - the plotting character, default: 19
+#'   - _col.lm_ - color for the regression line and their confidence interval, default: 'red'
+#'   - _col.pi_ - color for the prediction confidence interval, default: 'blue'
+#'   - _grid_ - should a grid be drawn in the plot, default: TRUE
+#'   - _polygon_ - should the confidence interval for the regression line been shown as transparent polygon, default: TRUE
+#    - _col.polygon_ - the color for the polygon, default: "
+#'   - _..._ - other arguments which will be forwarded to the plot function
+#' 
+#' > Returns: numerical value for the excess kurtosis.
+#' 
+#' > Example:
+#' 
+#' > ```{r label=lmPlotkurtosis,fig.cap=""}
+#' data(iris) 
+#' sbi$lmPlot(iris$Sepal.Width, iris$Sepal.Length,
+#'    col=as.numeric(iris$Species)+1,col.pi="bisque4",
+#'    col.lm="black",xlab="Sepal.Width",ylab="Sepal.Length")
+#' > ```
+#' 
+#' > See also: [sbi$skewness](#skewness)
+#' 
+
+sbi$lmPlot = function (x,y, col="blue",pch=19,col.lm="red",col.pi="blue",
+                   grid=TRUE,polygon=TRUE,col.polygon="#cccccc33",...) {
+    df <- data.frame(x=x,y=y)
+    plot(y ~ x, data=df, pch=pch, col=col,...)
+    if (grid) {
+        grid (NULL,NULL, lty = 3, col = "grey30")
+    }
+    mod <- lm( y ~ x, data=df)
+    new.x.df = data.frame(
+        x = seq(from   = range(df$x)[1],
+                to     = range(df$x)[2],
+                length = 11 ))
+    lty=list(upr=2,lwr=2,fit=1)
+    poly.y=c()
+    poly.x=c()
+    for (lim in c("upr","lwr","fit")) {
+        nx=new.x.df$x
+        ny=predict(mod, new.x.df,   
+                            interval = "confidence" )[,lim]
+        lines(x   = nx,
+              y   = ny,
+              col = col.lm,lty=lty[[lim]],lwd=2 )
+        if (lim == "upr") {              
+            poly.x=nx
+            poly.y=ny
+        } else if (lim == "lwr") {
+            poly.x=c(poly.x,rev(nx))
+            poly.y=c(poly.y,rev(ny))               
+        }
+    }
+    if (polygon) {
+        polygon(poly.x,poly.y,col=col.polygon,border=col.polygon)
+        points(y ~ x, data=df, pch=pch, col=col,...)  
+    }
+    for (lim in c("upr","lwr")) {
+         lines(
+               x   = new.x.df$x,
+               y   = predict( mod, new.x.df, 
+                             interval = "prediction" )[ , lim ],
+               col = col.pi ,lty=2,lwd=2)
+     }
 }
 
 #' 
@@ -1426,7 +1803,7 @@ sbi$is.dict <- function (l) {
 #' > Example:
 #' 
 #' 
-#' > ```{r}
+#' > ```{r label=kurtosis}
 #'   sbi$kurtosis(1:10)      # very uniform, should be negative
 #'   sbi$kurtosis(runif(10,min=1,max=5)+rnorm(10,mean=3,sd=0.2))
 #'   sbi$kurtosis(rnorm(100,mean=10,sd=0.5)) # close to zero
@@ -1466,7 +1843,7 @@ sbi$kurtosis <- function (x,na.rm=TRUE) {
 #' 
 #' > Examples:
 #' 
-#' > ```{r fig.width=10,fig.height=5,out.width=800}
+#' > ```{r fig=TRUE,fig.width=10,fig.height=5,out.width=800,fig.cap=""}
 #'   data(iris)
 #'   sbi$mhist(iris$Sepal.Length,iris$Species,cols="skyblue")
 #' > ```
@@ -1551,12 +1928,13 @@ sbi$mhist <- function (y,groups,breaks=10,cols='grey80',...) {
 #' > - _x_ - either a binned table, a matrix or data.frame or a numerical vector
 #'   - _y_ - a numerical vector if x is not a binned table or matrix or data.frame
 #'   - _breaks_ - number of breaks to create a binned table if x and y are numerical vectors, default: 4
-#'   _ _norm_ - if input is given should the matrix be normalized by dividing the off-diagonal values by the mutual information in the diagonals, so the self mutual information, default: FALSE
+#'   - _norm_ - if input is given should the matrix be normalized by dividing the off-diagonal values by the mutual information in the diagonals, so the self mutual information, default: FALSE
+#' 
 #' > Returns: mutual information value as scalar if inout is table or two vectors or as matrix if input is matrix or data.frame
 #' 
 #' > Example:
 #' 
-#' > ```{r}
+#' > ```{r label=mi}
 #'   rn1=rnorm(100,mean=10,sd=1);
 #'   rn2=rn1+0.5*rnorm(100)
 #'   cor(rn1,rn2) # high
@@ -1604,27 +1982,59 @@ sbi$mi = function (x,y=NULL,breaks=4,norm=FALSE) {
 }
 
 #' 
+#' <a name="modus"> </a>
+#' **sbi$modus(catvar)** 
+#' 
+#' > Return the most often level in a categorical variable.
+#' 
+#' > Arguments:
+#' 
+#' > - _cat_ - a vector with elements of class factor
+#' 
+#' > Returns: Most often apparent level in the categorical variable
+#' 
+#' > Example:
+#' 
+#' > ```{r label=modus}
+#'   sbi$modus(c('A','A','B','C'))
+#'   sbi$modus(c('A','A','B','B','C'))
+#' > ```
+
+sbi$modus = function (cat) {
+    tab=table(cat)
+    idx=which(max(tab)==tab)
+    return(names(tab)[idx])
+}
+
+#' 
 #'  <a name="package.deps"> </a>
 #' **sbi$package.deps(pkgName,mode='all')**
 #' 
 #' > Return the packages which are required by the given package name.
 #' 
+#' > Description:
+#' 
+#' > Please use only the packages you really need. 
+#'   If there is just a simple functionality try to code this yourself, for instance the [sbi$drop_na](#drop_na) functionality. So, before you install a package check what other 
+#'   packages you get. If you give your script to other users, they must install all these packages as well.
+#' 
 #' > Arguments:
 #' 
 #' > - _pkgName_ - an package name given as text string.
 #'   - _mode_ - which package names to return, the following modes are available
-#'        - 'all' - all required packages
-#'        - 'install' - not yet installed packages
-#'        - 'nonbase' - packages not in the standard R installation
+#' >     * 'all' - all required packages
+#' >      * 'install' - not yet installed packages
+#' >      * 'nonbase' - packages not in the standard R installation
 #'   - _cran_ - the default CRAN site, default: "https://www.freestatistics.org/cran/"
 #' 
 #' > Returns: list of required packages.
 #' 
 #' > Example:
 #' 
-#' > ```{r}
-#'   sbi$package.deps('igraph',mode='nonbase')
+#' > ```{r label=package.deps}
+#'   sbi$package.deps('igraph',mode='nonbase') # not so many
 #'   sbi$package.deps('igraph',mode='all')
+#'   sbi$package.deps('tidyr',mode='nonbase')  # quite a lot!
 #' > ```
 
 sbi$package.deps <- function(pkgName,mode='all',cran="https://lib.ugent.be/CRAN/")  {
@@ -1671,7 +2081,7 @@ sbi$package.deps <- function(pkgName,mode='all',cran="https://lib.ugent.be/CRAN/
 #' 
 #' > Example:
 #' 
-#' > ```{r}
+#' > ```{r label=package.request}
 #'   # notrun
 #'   res=sbi$package.request('argparser')
 #'   print(res)
@@ -1692,31 +2102,6 @@ sbi$package.request <- function (pkgName,cran="https://www.freestatistics.org/cr
 }
 
 #' 
-#' <a name="modus"> </a>
-#' **sbi$modus(catvar)** 
-#' 
-#' > Return the most often level in a categorical variable.
-#' 
-#' > Arguments:
-#' 
-#' > - _cat_ - a vector with elements of class factor
-#' 
-#' > Returns: Most often apparent level in the categorical variable
-#' 
-#' > Example:
-#' 
-#' > ```{r}
-#'   sbi$modus(c('A','A','B','C'))
-#'   sbi$modus(c('A','A','B','B','C'))
-#' > ```
-
-sbi$modus = function (cat) {
-    tab=table(cat)
-    idx=which(max(tab)==tab)
-    return(names(tab)[idx])
-}
-
-#' 
 #' <a name='pastel'> </a>
 #' **sbi$pastel(n)**
 #' 
@@ -1731,7 +2116,7 @@ sbi$modus = function (cat) {
 #' 
 #' > Returns: Vector of colors in RGB codes of requested length 'n'
 #' 
-#' > ```{r fig=TRUE,fig.height=3,fig.width=6}
+#' > ```{r label=pastel,fig=TRUE,fig.height=3,fig.width=6,fig.cap=""}
 #' sbi$pastel(4)
 #' par(mai=c(0.2,0.2,0.2,0.1))
 #' plot(1:20,col=sbi$pastel(20),cex=3,pch=15)
@@ -1750,7 +2135,7 @@ sbi$pastel = function (n) {
 
 #' 
 #' <a name="pca.biplot"> </a>
-#' **pca.biplot(pca,...)** 
+#' **sbi$pca.biplot(pca,...)** 
 #' 
 #' > Improved biplot for pca objects.
 #' 
@@ -1778,20 +2163,20 @@ sbi$pastel = function (n) {
 #' 
 #' > Example:
 #' 
-#' > ```{r fig=TRUE,fig.height=6,fig.width=12,fig.cap=""}
+#' > ```{r label=biplot,fig=TRUE,fig.height=6,fig.width=12,fig.cap=""}
 #'   par(mai=c(0.8,0.8,0.2,0.6),mfrow=c(1,2))
 #'   data(iris)
 #'   pci=prcomp(iris[,1:4],scale=TRUE)
-#'   pca.biplot(pci,col=rep(2:4,each=50),ellipse=TRUE,ell.fill=TRUE,
+#'   sbi$pca.biplot(pci,col=rep(2:4,each=50),ellipse=TRUE,ell.fill=TRUE,
 #'       arrow.fac=2.3,arrows=TRUE,main="biplot")
 #'   legend('topright',pch=19,col=2:4,levels(iris$Species))
 #'   # standard score plot
-#'   pca.biplot(pci,col=rep(2:4,each=50),ellipse=FALSE,
+#'   sbi$pca.biplot(pci,col=rep(2:4,each=50),ellipse=FALSE,
 #'      arrow.fac=2.3,arrows=FALSE,main="scoreplot")
 #' > ```
 #' 
 
-pca.biplot = function (pca,pcs=c("PC1","PC2"),
+sbi$pca.biplot = function (pca,pcs=c("PC1","PC2"),
                        pch=19,col='black',
                        arrows=TRUE,arrow.fac=1,
                        ellipse=FALSE,ell.fill=FALSE,xlab=NULL,ylab=NULL,...) {
@@ -1864,7 +2249,7 @@ pca.biplot = function (pca,pcs=c("PC1","PC2"),
 #' 
 #' > Example:
 #' 
-#' > ```{r fig=TRUE,fig.cap=""}
+#' > ```{r label=pca.pairs,fig=TRUE,fig.cap=""}
 #'   data(iris)
 #'   pci=prcomp(iris[,1:4],scale=TRUE)
 #'   sbi$pca.pairs(pci,pch=15,groups=iris[,5],
@@ -1944,7 +2329,7 @@ sbi$pca.pairs = function (pca,n=10,groups=NULL,
 #' 
 #' > Example:
 #' 
-#' > ```{r fig=TRUE,fig.width=11,fig.height=6,fig.cap=""}
+#' > ```{r label=pca.plot,fig=TRUE,fig.width=11,fig.height=6,fig.cap=""}
 #'   data(iris)
 #'   par(mfrow=c(1,2))
 #'   pcai=prcomp(iris[,1:4],scale=TRUE)
@@ -2013,7 +2398,7 @@ sbi$pca.plot = function (pca,n=10,type="bar", cex=1.5,
 #' 
 #' > Examples:
 #' 
-#' > ```{r}
+#' > ```{r label=pcor}
 #'   y.data <- data.frame(
 #'     hl=c(7,15,19,15,21,22,57,15,20,18),
 #'     disp=c(0.000,0.964,0.000,0.000,0.921,0.000,0.000,1.006,0.000,1.011),
@@ -2059,7 +2444,7 @@ sbi$pcor = function (x,y,z,method='pearson') {
 #'   - _gn_ - gives the number of given variables
 #'   - _method_ - gives the correlation method used
 #' 
-#' > ```{r}
+#' > ```{r label=pcor.test}
 #'   y.data <- data.frame(
 #'    hl=c(7,15,19,15,21,22,57,15,20,18),
 #'    disp=c(0.000,0.964,0.000,0.000,0.921,0.000,0.000,1.006,0.000,1.011),
@@ -2131,7 +2516,7 @@ sbi$pcor.test = function (x,y,z,method='pearson') {
 #' 
 #' > Examples:
 #' 
-#' > ```{r eval=FALSE}
+#' > ```{r label=readDataFiles,eval=FALSE}
 #'   # not run
 #'   res=sbi$readDataFiles("datadir",sep="\t")
 #' > ```
@@ -2172,7 +2557,7 @@ sbi$readDataFiles <- function (dir,fun=read.table, pattern=".tab",...) {
 #' > Example:
 #' 
 #'  
-#' > ```{r}
+#' > ```{r label=report.pval}
 #'   report.pval=sbi$report.pval
 #'   report.pval(1/10000)
 #'   report.pval(1/10000,star=TRUE)
@@ -2184,7 +2569,7 @@ sbi$readDataFiles <- function (dir,fun=read.table, pattern=".tab",...) {
 
 sbi$report.pval <- function (p.val,star=FALSE) {
     if (length(p.val) > 1) {
-        return(as.character(lapply(p.val,report.pval)))
+        return(as.character(lapply(p.val,sbi$report.pval)))
     }
     if (p.val <0.001 & star) {
         return('***')
@@ -2206,6 +2591,229 @@ sbi$report.pval <- function (p.val,star=FALSE) {
 }   
 
 #' 
+#' <a name="shape"> </a>
+#' **sbi$shape(x=0,y=0,width=1,height=1,type="circle",...)** 
+#' 
+#' > create polygon shapes centered at given x and y coordinates.
+#' 
+#' > Arguments:
+#' 
+#' > -  _x_ - horizontal center of shape, default: 0
+#'   -  _y_ - vertical center of shape, default: 0
+#'   - _width_ - the shape width, default: 1
+#'   - _height_ - the shape height, default: 1
+#'   - _seed_ - set a seed for a random polygon, default: 17
+#' 
+#' > Returns: polygon as list of x and y coordinates
+#' 
+#' > Example:
+#'  
+#' > ```{r label=shape,results="hide",fig=TRUE,fig.cap="",fig.width=12,fig.height=12}
+#' par(mfrow=c(2,2),mai=rep(0.5,4))
+#' plot(1,xlim=c(-1,1),ylim=c(-1,1),axes=TRUE,xlab="",ylab="",type="n")
+#' grid()
+#' polygon(sbi$shape(-0.5,-0.5,type="circle",width=0.3,height=0.3),col="skyblue")
+#' polygon(sbi$shape(0,-0.5,type="rand",width=0.3,height=0.3),col="skyblue")
+#' polygon(sbi$shape(0.5,-0.5,type="rand",width=0.3,height=0.3,seed=19),col="salmon")
+#' polygon(sbi$shape(-0.5,0,type="circle",width=0.4,height=0.2),col="cornsilk")
+#' polygon(sbi$shape(0,0,type="rect",width=0.3,height=0.2),col="cornsilk")
+#' polygon(sbi$shape(0.5,0,type="rect",width=0.2,height=0.2),col="cornsilk")
+#' polygon(sbi$shape(-0.5,0.5,type="hexagon",width=0.4,height=0.2),col="cornsilk")
+#' polygon(sbi$shape(0,0.5,type="diamond",width=0.4,height=0.2),col="bisque")
+#' polygon(sbi$shape(0.5,0.5,type="octagon",width=0.4,height=0.2),col="bisque")
+#' plot(1,xlim=c(-1,1),ylim=c(-1,1),axes=FALSE,xlab="",ylab="",type="n")
+#' for (i in 1:20) {
+#'    col=colors()[sample(2:50,1)]
+#'    x=runif(1,min=-0.8,max=0.8)
+#'    y=runif(1,min=-0.8,max=0.8)
+#'    polygon(sbi$shape(x,y,type="rand",width=0.25,height=0.25,
+#'       seed=20+i),col=col,border=col)
+#'    text(x,y,20+i,col="white")
+#' }
+#' # chessboard
+#' par(mai=rep(0.2,4))
+#' plot(1,xlim=c(-0.5,9.5),ylim=c(-0.5,9.5),axes=FALSE,xlab="",ylab="",type="n")
+#' cols=c(rep(c("burlywood3","bisque"),4),rep(c("bisque","burlywood3"),4))
+#' c=0
+#' polygon(sbi$shape(4.5,4.5,type="rect",width=10,height=10),col="burlywood3")
+#' polygon(sbi$shape(4.5,4.5,type="rect",width=9.8,height=9.8),col="bisque2",border="burlywood3",lwd=4)
+#' for (col in 1:8) {
+#'    for (row in 1:8) {
+#'       c=c+1
+#'       polygon(sbi$shape(col,row,type="rect",width=1,height=1),col=cols[c])
+#'       if (c==16) { c = 0 }
+#'    }
+#' }
+#' text(1:8,rep(0,8),LETTERS[1:8],cex=1.5)
+#' text(rep(0,8),1:8,1:8,cex=1.5)
+#' text(1:8,1,c("\u2656","\u2658","\u2657","\u2655",
+#'              "\u2654","\u2657","\u2658","\u2656"),cex=4)
+#' text(1:8,2,rep("\u2659",8),cex=4)
+#' text(1:8,7,rep("\u265F",8),cex=4)
+#' text(1:8,8,c("\u265C","\u265E","\u265D","\u265B",
+#'              "\u265A","\u265D","\u265E","\u265C"),cex=4)
+#' # Go board
+#' plot(1,xlim=c(0,20),ylim=c(0,20),axes=FALSE,xlab="",ylab="",type="n")
+#' polygon(sbi$shape(10,10,type="rect",width=20.5,height=20.5),col="burlywood3")
+#' polygon(sbi$shape(10,10,type="rect",width=19.5,height=19.5),col="bisque2",border="burlywood3",lwd=4)
+#' # grid
+#' res=lapply(1:19, function (x) lines(c(x,x),c(1,19),lwd=1))
+#' res=lapply(1:19, function (x) lines(c(1,19),c(x,x),lwd=1))
+#' # markers
+#' for (i in c(5,10,15)) {
+#'     for (j in c(5,10,15)) {
+#'        polygon(sbi$shape(i,j,type="circle",width=0.3,height=0.3),col="black")
+#'     }
+#' }
+#' # some stones
+#' set = function (x,y,col="black") {
+#'     w=0.9
+#'     if (col=="white") {
+#'        w=0.95
+#'     }
+#'     polygon(sbi$shape(x,y,type="circle",width=w,height=w),col=col,border="grey20")
+#' }
+#' set(3,4,"black")
+#' set(5,3,"white")
+#' set(16,3,"black")
+#' set(16,15,"white")
+#' set(4,16,"black")
+#' text(3,14,"X",cex=2) # set suggestion
+#' > ```
+
+sbi$shape <- function (x=0,y=0,width=1,height=1,type="circle",seed=17,...) {
+    circle = function (x,y, radius=1,length=100) {
+        theta = seq(0, 2 * pi, length = 100) 
+        return(list(x=radius*cos(theta)+x,
+                    y=radius*sin(theta)+y))
+    }
+    # https://gis.stackexchange.com/questions/24827/smoothing-polygons-in-contour-map/24929#24929
+    randPoly = function (n=6,seed=17) {
+        set.seed(seed)
+        n.vertices <- 10
+        theta <- (runif(n.vertices) + 1:n.vertices - 1) * 2 * pi / n.vertices
+        r <- rgamma(n.vertices, shape=3)
+        xy <- cbind(cos(theta) * r, sin(theta) * r)
+        xy=spline.poly(xy)
+        return(list(x=xy[,1],y=xy[,2]))
+    }
+    # Splining a polygon.
+    #
+    #   The rows of 'xy' give coordinates of the boundary vertices, in order.
+    #   'vertices' is the number of spline vertices to create.
+    #              (Not all are used: some are clipped from the ends.)
+    #   'k' is the number of points to wrap around the ends to obtain
+    #       a smooth periodic spline.
+    #
+    #   Returns an array of points. 
+    # 
+    spline.poly <- function(xy, vertices=100, k=3, ...) {
+        # Assert: xy is an n by 2 matrix with n >= k.
+        
+        # Wrap k vertices around each end.
+        n <- dim(xy)[1]
+        if (k >= 1) {
+            data <- rbind(xy[(n-k+1):n,], xy, xy[1:k, ])
+        } else {
+            data <- xy
+        }
+        
+        # Spline the x and y coordinates.
+        data.spline <- spline(1:(n+2*k), data[,1], n=vertices, ...)
+        x <- data.spline$x
+        x1 <- data.spline$y
+        x2 <- spline(1:(n+2*k), data[,2], n=vertices, ...)$y
+        # Retain only the middle part.
+        cbind(x1, x2)[k < x & x <= n+k, ]
+    }
+    center = function (poly) {
+        poly$x=poly$x-mean(poly$x)
+        poly$x=poly$x/diff(range(poly$x))
+        poly$y=poly$y-mean(poly$y)
+        poly$y=poly$y/diff(range(poly$y))
+        return(poly)
+    }
+    if (substr(type,1,4) == "circ") {
+        poly=circle(0,0,radius=1)
+    } else if (type == "rand") {
+        poly=randPoly(seed=seed) 
+    } else if (type %in% c("rect","rectangle")) {
+        poly=list(x=c(-0.5,0.5,0.5,-0.5),
+                  y=c(-0.5,-0.5,0.5,0.5))
+    } else if (type == "diamond") {
+        poly=list(x=c(-0.5,  0,   0.5,0  ),
+                  y=c( 0  , -0.5, 0.0,0.5))
+    } else if (type == "hexagon") {
+        poly=list(x=c(-0.5,-0.3,+0.3,+0.5,+0.3,-0.3),
+                  y=c(+0.0,-0.5,-0.5,+0.0,+0.5,+0.5))
+    } else if (type == "octagon") {
+        poly=list(x=c(-0.5,-0.5,-0.3,0.3,0.5,0.5,0.3,-0.3),
+                  y=c(0.25,-0.25,-0.5,-0.5,-0.25,+0.25,0.5,0.5))
+    }
+    poly=center(poly)
+    poly$x=poly$x*width+x
+    poly$y=poly$y*height+y
+    return(poly)
+}
+#' 
+#' <a name="shell"> </a>
+#' **sbi$shell(script)** 
+#' 
+#' > Executes a given shell script in text format (Unix only).
+#' 
+#' > Arguments:
+#' 
+#' > -  _script_ - text of a shell script
+#'   -  _filename_ - the script filename, default: "shell-script.sh"
+#' 
+#' > Returns: command output
+#' 
+#' > Example:
+#'  
+#' > ```{r label=shell,results="hide"}
+#' sbi$shell("#!/usr/bin/env -S dot -Tpng -odot.png
+#' digraph G {
+#' rankdir=LR;
+#'   node[style=filled,fillcolor=skyblue];
+#'   a -> b [arrowhead=none];
+#'   b -> c [arrowhead=none];
+#'   c -> d [arrowhead=none];
+#'   a [shape=rpromoter,label=\"UAS\",fillcolor=salmon];
+#'   b [shape=rectangle,label=\"LacI\"];
+#'   c [shape=rpromoter,label=\"UAS\",fillcolor=salmon];
+#'   d [shape=rectangle,label=\"Reporter\"];
+#' }
+#' ")
+#' > ```
+#' 
+#' > ![](dot.png)
+#' 
+#' > The resulting png file must be embedded using standard Markdown Syntax:
+#' 
+#' > ```
+#'   > ![](dot.png)
+#' > ```
+#' 
+#' > See also: 
+#' 
+#' > - Example is from [https://caretdashcaret.com/2012/08/27/graphviz/](https://caretdashcaret.com/2012/08/27/graphviz/))
+#'   - Graphivz guide:
+#' >    * [Dot guide](https://www.graphviz.org/pdf/dotguide.pdf)
+#' >    * [More shapes](http://www.graphviz.org/doc/info/shapes.html) 
+#' 
+
+
+sbi$shell <- function (script,filename="shell-script.sh") {
+    fout = file(filename,'w')
+    cat(script,"\n",file=fout)
+    close(fout)
+    system(sprintf("chmod 755 %s",filename))
+    res=system(sprintf("./%s\n",filename))
+    return(res)
+}
+
+
+#' 
 #' <a name="sem"> </a>
 #' **sbi$sem(x,na.rm=FALSE)** 
 #' 
@@ -2221,7 +2829,7 @@ sbi$report.pval <- function (p.val,star=FALSE) {
 #' > Example:
 #' 
 #'  
-#' > ```{r}
+#' > ```{r label=sem}
 #'   sem=sbi$sem
 #'   sem(rnorm(50,mean=10,sd=3))
 #'   sem(rnorm(1000,mean=10,sd=3))
@@ -2251,7 +2859,7 @@ sbi$sem <- function(x,na.rm=FALSE) {
 #' > Example:
 #' 
 #' 
-#' > ```{r}
+#' > ```{r label=skewness}
 #'   sbi$skewness(1:100)          # very uniform, 0
 #'   sbi$skewness(rnorm(100))     # normal, close to 0
 #'   # now with right tail
@@ -2294,7 +2902,7 @@ sbi$skewness <- function (x,na.rm=TRUE) {
 #' 
 #' > Examples:
 #' 
-#' > ```{r}
+#' > ```{r label=smartbind}
 #'   ir1=cbind(rn1=rnorm(nrow(iris)),iris)
 #'   ir2=cbind(iris,rn2=rnorm(nrow(iris),mean=10))
 #'   head(sbi$smartbind(ir1,ir2))
@@ -2318,6 +2926,144 @@ sbi$smartbind <- function (x,y) {
     return(x)
 }
 
+#' <a name='venn'> </a>
+#' **sbi$venn(x,...)**
+#' 
+#' > Plot Venn diagram for logical relations between two or three sets.
+#'
+#' > This function combines two data frames or matrices even if they have different
+#'   column names. In each data frame or matrix missing columns are first filled up
+#'   with NA's. Thereafter data is fused using rbind. Column order is determined based 
+#'   on the first given data.
+#'
+#' > Arguments: 
+#' 
+#' > - *x* - data frame or matrix or vector, in the latter case y and for 3 sets as well z must be given
+#'   - *y* - vector if _x_ is vector, default: NULL
+#'   - *z* - vector if _x_ and _y_ are vectors, default: NULL
+#'   - *vars* - variable names to display if x, y and z are vectors, default: NULL
+#'   - _col_ - background colors for the circles, default: c("#cc888899","#8888cc99","#88cc8899")
+#'   - _cex_ - character expansion for the text characters, default: 1.6
+#'   - _..._ - argument delegated to the plot function
+
+#' > Returns:  Nothing
+#' 
+#' > Examples:
+#' 
+#' > ```{r label=venn,fig=TRUE,fig.width=8,fig.height=8,fig.cap=""}
+#' X=matrix(rnorm(2700),ncol=3)
+#' colnames(X)=c("A","B","C")
+#' X=X>0.4
+#' Y=X[,1:2]
+#' Y=Y>0.7
+#' par(mfrow=c(2,2),mai=rep(0.1,4),pty='s')
+#' sbi$venn(X)
+#' sbi$venn(Y)
+#' sbi$venn(x=LETTERS[1:9],y=LETTERS[3:6],z=LETTERS[4:12],vars=c('Xvar','Yvar','Zvar'))
+#' sbi$venn(x=LETTERS[1:9],y=LETTERS[3:6],vars=c('Xvar','Yvar'))
+#' > ```
+#' 
+sbi$venn = function (x,y=NULL,z=NULL,vars=NULL,col=c("#cc888899","#8888cc99","#88cc8899"),cex=1.6,...) {
+    venn2D = function (x,col=c("#cc888899","#8888cc99"),cex=1.6,...) {
+        if (!is.data.frame(x) & !is.matrix(x)) {
+            stop("Error: Not a two column matrix or data frame!")
+        }
+        if (ncol(x) != 2) {
+            stop("Error: Not a two column matrix or data frame!")   
+        }
+        # reset to useful values, slightly smaller than the defaults:
+        # defaults: mai=c(1.02, 0.82, 0.82, 0.42)
+        #opar=par(mai=c(1, 0.8, 0.8, 0.4),pty='s')
+        # compute circle size
+        circ.cex=70*par()$fin[1]/9
+        plot(c(1,2),c(1,1),xlim=c(0,3),ylim=c(0.4,1.7),
+             pch=19,cex=circ.cex,axes=FALSE,
+             xlab="",ylab="",
+             col=col,...)
+        text(1,1.6,colnames(x)[1],cex=cex)
+        text(2,1.6,colnames(x)[2],cex=cex)
+        # the changes
+        if (class(x[,1]) == "logical") {
+            is=length(which(x[,1] & x[,2]))
+            ls=length(which(x[,1] & !x[,2]))
+            rs=length(which(!x[,1] & x[,2]))
+            os=length(which(!x[,1] & !x[,2]))
+        } else {
+            is=length(intersect(x[,1],x[,2]))
+            ls=length(setdiff(x[,1],x[,2]))
+            rs=length(setdiff(x[,2],x[,1]))
+            os=""
+        }   
+        text(1.5,1,is,cex=cex)
+        text(0.5,1,ls,cex=cex)
+        text(2.5,1,rs,cex=cex)
+        text(1.5,0.4,os,cex=cex)
+        #par(opar)
+    }                                                   
+    if (class(y)[1] != "NULL" & class(z)[1]!="NULL") {
+        M=matrix('',ncol=3,nrow=max(c(length(x),length(y),length(z))))
+        M[1:length(x),1]=x
+        M[1:length(y),2]=y
+        M[1:length(z),3]=z        
+        colnames(M)=c('x','y','z')
+        if (class(vars[1])!="NULL") {
+            colnames(M)=vars
+        }
+        sbi$venn(M,col=col,cex=cex,...)
+    } else if (class(y)[1] != "NULL") {
+        M=matrix('',ncol=2,nrow=max(c(length(x),length(y))))
+        M[1:length(x),1]=x
+        M[1:length(y),2]=y
+        colnames(M)=c('x','y')
+        if (class(vars[1])!="NULL") {
+            colnames(M)=vars
+        }
+        sbi$venn(M,col=col,cex=cex,...)
+    } else if (!is.data.frame(x) & !is.matrix(x)) {
+        stop("Error: Not a matrix or data frame!")
+    } else if (ncol(x) == 2) {
+        venn2D(x,col=col[1:2],cex=cex,...)
+    } else if (ncol(x) != 3) {
+        stop("Error: Only two or three column matrix or data frame is accepted!")  
+    } else if (!class(x[,1]) == "logical") {    
+        rnames=unique(c(x[,1],x[,2],x[,3]))
+        rnames=rnames[which(rnames!="")]
+        M=matrix(FALSE,ncol=3,nrow=length(rnames))
+        rownames(M)=rnames
+        colnames(M)=colnames(x)
+        for (i in 1:3) {
+            idx=which(rnames%in%x[,i])
+            M[idx,i]=TRUE
+        }   
+        sbi$venn(M,col=col,cex=cex,...)
+    } else {  
+        #opar=par(mai=c(0.5, 0.4, 0.4, 0.2),pty='s')
+        circ.cex=70*par()$fin[1]/9
+        plot(c(3.5,5.5,4.5),c(5.5,5.5,3.5),xlim=c(0,9),ylim=c(0,9),
+             pch=19,cex=circ.cex,axes=FALSE,asp=1,
+                xlab="",ylab="", col=col,...)
+        text(0.5,7,colnames(x)[1],cex=cex)
+        text(8.5,7,colnames(x)[2],cex=cex)
+        text(4.5,0.25,colnames(x)[3],cex=cex)
+        is=length(which(x[,1] & x[,2] & x[,3]))
+        ls=length(which(x[,1] & !x[,2] & !x[,3]))
+        rs=length(which(!x[,1] & x[,2] & !x[,3]))
+        bs=length(which(!x[,1] & !x[,2] & x[,3]))        
+        os=length(which(!x[,1] & !x[,2] & !x[,3]))
+        xys=length(which(x[,1] & x[,2] & !x[,3]))
+        xzs=length(which(x[,1] & !x[,2] & x[,3]))        
+        yzs=length(which(!x[,1] & x[,2] & x[,3]))                
+        text(4.5,4.8,is,cex=cex*0.8)
+        text(4.5,8.5,os,cex=cex*0.8)
+        text(2.2,6,ls,cex=cex*0.8)
+        text(6.8,6,rs,cex=cex*0.8)
+        text(4.5,2.1,bs,cex=cex*0.8)
+        text(4.5,6.6,xys,cex=cex*0.8)    
+        text(2.9,4,xzs,cex=cex*0.8)        
+        text(6,4,yzs,cex=cex*0.8)            
+        #par(opar)
+    }   
+}
 #' ## Operators
 #' 
 #'  <a name="ni"> </a>
@@ -2334,7 +3080,7 @@ sbi$smartbind <- function (x,y) {
 #' 
 #' > Example:
 #' 
-#' > ```{r}
+#' > ```{r label=ni}
 #'   v1=1:5
 #'   v2=3:7
 #'   v1 %ni% v2
@@ -2351,7 +3097,9 @@ sbi$smartbind <- function (x,y) {
 #' > Pipe an object forward into a function or call expression.
 #' Unlike the `magrittr` pipe, you must supply an actual function 
 #' instead of just a function name. For example
-#' `mtcars %>% head` will not work, but `mtcars %>% head()` will.
+#' `mtcars %>% head` will not work, but `mtcars %>% head()` will. 
+#' 
+#' > Please note, that since version 4.1 has a default pipe operator `|>', here an interesting [article](https://www.infoworld.com/article/3621369/use-the-new-r-pipe-built-into-r-41.html).
 #'
 #' > Arguments:
 #' 
@@ -2360,7 +3108,7 @@ sbi$smartbind <- function (x,y) {
 #'
 #' > Examples:
 #'
-#' > ```{r}
+#' > ```{r label=pipe}
 #'   data(mtcars)
 #'   mtcars %>% head()
 #'   mtcars %>% subset(select=c(mpg,cyl,disp,drat)) %>% head()
@@ -2380,7 +3128,7 @@ sbi$smartbind <- function (x,y) {
 #' 
 #' How to cite this package:
 #' 
-#' ```{.r}
+#' ```
 #' # notrun
 #' @Misc{Groth2022sbi,
 #'   author =   {Detlef Groth},
@@ -2414,11 +3162,25 @@ sbi$smartbind <- function (x,y) {
 #' in R packages available on CRAN. If you do serious statistical analysis I recommend to use those packages. Here is a list of packages I recommend
 #' very much:
 #' 
-#' - vcd
-#' - corrplot
-#' - e1071
-#' - effectsize
-#' - argparser
+#' - [vcd](https://cran.r-project.org/web/packages/vcd)
+#' - [corrplot](https://cran.r-project.org/web/packages/corrplot)
+#' - [e1071](https://cran.r-project.org/web/packages/e1071)
+#' - [effectsize](https://cran.r-project.org/web/packages/effectsize)
+#' - [argparser](https://cran.r-project.org/web/packages/argparser)
+#' - [diagram](https://cran.r-project.org/web/packages/diagram)
+#' 
+#' ## ChangeLog
+#' 
+#' - 2022-01-30 - Version 0.1
+#' - 2022-02-02 - Version 0.2
+#'      - new function mkdoc
+#'      - new function shell
+#'      - new function shape
+#'      - fix report.pval
+#'      - docu extensions, fixes
+#' - 2022-03-03 - Version 0.3
+#'      - adding venn-plot
+#'      - bezier curves and flow update
 #' 
 #' ## Copyright
 #' 
@@ -2426,7 +3188,83 @@ sbi$smartbind <- function (x,y) {
 #' 
 #' License: MIT - License
 #' 
+## Some other variables
 
+sbi$CSS = "
+    html {
+        overflow-y: scroll;
+    }
+    body {
+        color: #444;
+        font-family: Georgia, Palatino, 'Palatino Linotype', Times, 'Times New Roman', serif;
+        line-height: 1.2;
+        padding: 1em;
+        margin: auto;
+        max-width:  800px;
+    }
+    h1, h2, h3, h4, h5, h6 {
+        color: #111;
+        line-height: 115%;
+        margin-top: 1em;
+        font-weight: normal;
+    }
+    h1 {
+        text-align: center;
+        font-size: 120%;
+    }
+    h2 {  text-transform: uppercase;   }
+
+    h4.author, h4.date, p.author, p.date {
+        font-size: 110%;
+        text-align: center;
+    }
+    
+    p {  margin: 0.5em 0;  }
+
+    a {
+        color: #0645ad;
+        text-decoration: none;
+    }
+    a:visited { color: #0b0080;  }
+    a:hover   { color: #06e;     }
+    a:active  { color: #faa700;  }
+    a:focus   { outline: thin dotted; }
+    p.date {  text-align: center;  }
+    img {  max-width: 90%; }
+    
+    pre, blockquote pre {
+        border-top: 0.1em #9ac solid;
+        background: #e9f6ff;
+        padding: 10px;
+        border-bottom: 0.1em #9ac solid;
+    }
+    
+    blockquote {
+        margin: 0; 
+        padding-left: 3em; 
+    }
+    pre, code, kbd, samp {
+        color: #000;
+        font-family: Monaco, 'courier new', monospace;
+        font-size: 90%; 
+    }
+    code.r {
+        color: #770000;
+    }
+    pre {
+        white-space: pre;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+    /* fix, do not like bold for every keyword */
+    code span.kw { color: #007020; font-weight: normal; } /* Keyword */
+     pre.sourceCode {
+        background: #fff6f6;
+    } 
+    figure, p.author {
+        text-align: center;
+    }
+"
 if (sys.nframe() == 0L && !interactive()) {
     usage <-  function () {
         cat("sbi.R - R functions for Statisical Bioinformatics\n\n")
@@ -2439,39 +3277,15 @@ if (sys.nframe() == 0L && !interactive()) {
         cat("   Rscript sbi.R --eval\n")
         cat("\n\n")
     }
-    stripCode <- function (infile) {
-        cat(" running", sbi$FILENAME,"\n")
-        
-        fin  = file(sbi$FILENAME, "r")
-        
-        outfile=gsub("\\.R",".Rmd",sbi$FILENAME)
-        fout = file(outfile,'w')
-        
-        while(length((line = readLines(fin,n=1)))>0) {
-            if (grepl("^\\s*#'",line)) {
-                line=gsub("^\\s*#' ?","",line)       
-                cat(line,"\n",file=fout)
-            }
-        }
-        close(fin)
-        close(fout)
-        return(outfile)
-    }
     argv=commandArgs(trailingOnly=FALSE)
     idx=grep("--file",argv)
     sbi$FILENAME=gsub("--file=","",argv[idx])
     argv=commandArgs(trailingOnly=TRUE)
     if (length(argv) > 0) {
         if (grepl("--docu",argv)) {
-            stripCode()
-            system("pandoc -s -f markdown -c mini.css -o sbi.html sbi.Rmd ")
+            sbi$mkdoc(sbi$FILENAME,"mini.css",eval=FALSE)
         } else if (grepl("--eval",argv)) {
-            t1=Sys.time()
-            library(rmarkdown)
-            outfile=stripCode()
-            #knitr::knit(outfile)
-            render(outfile,html_document(css="mini.css",theme=NULL))
-            cat("Processing done in",round(as.numeric(Sys.time()-t1,units="secs"),2),"seconds!\n")
+            sbi$mkdoc(sbi$FILENAME,"mini.css",eval=TRUE)
        }
     } else {
         usage()
