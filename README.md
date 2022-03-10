@@ -62,11 +62,11 @@ Here an example, a PCA pairs plot create with the function `sbi$pca.pairs`.
 
 ### mini
 
-A minimal R library which can be used to start your own R library.
+A minimal R library which can be used to start your own R library. No special packages are required.
 
-* Download [mini_0.1.tar.gz]()
+* Download [mini_0.1.tar.gz](https://github.com/mittelmark/Rcode/raw/main/libs/mini_0.1.tar.gz)
 
-You can use this library by unpacking an renaming the folder *mini* to your
+You can use this library by unpacking and renaming the folder *mini* to your
 new project name. Afterwards you have to edit the DESCRIPTION file to adapt
 the project name. Let's assume that your project will be named *proj* you can
 the build compile and check your package in the parent folder of the project
