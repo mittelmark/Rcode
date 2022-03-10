@@ -8,7 +8,8 @@ This is a repository with single file R-scripts and some R tutorials.
     * [bkcd.R](#bkcd)  - xkcd like plots using base graphicsfunctions and operators
     * [chords.R](#chords) - draw chord diagrams for fretted instruments like Guitar and Ukulele using R
     * [sbi.R](#sbi)  - R functions for the course Statistical Bioinformatics
-
+* Libraries
+    * [mini](#mini) - a minimal R library which can be used as starter to build your own
 * Tutorials
     * [venn.html](#venn) - programming a simple Venn diagra,
     
@@ -56,6 +57,26 @@ Here an example, some non-standard chords for an Ukulele in the GCEA-tuning.
 Here an example, a PCA pairs plot create with the function `sbi$pca.pairs`.
 
 ![](sbi/pca.png)
+
+## Libraries
+
+### mini
+
+A minimal R library which can be used to start your own R library.
+
+* Download [mini_0.1.tar.gz]()
+
+You can use this library by unpacking an renaming the folder *mini* to your
+new project name. Afterwards you have to edit the DESCRIPTION file to adapt
+the project name. Let's assume that your project will be named *proj* you can
+the build compile and check your package in the parent folder of the project
+folder like this:
+
+```
+R CMD build proj
+R CMD check proj_0.1.tar.gz
+R CMD INSTALL proj_0.1.tar.gz
+```
 
 ## R programming tutorials
 
