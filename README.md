@@ -11,7 +11,7 @@ This is a repository with single file R-scripts and some R tutorials.
 * Libraries
     * [mini](#mini) - a minimal R library which can be used as starter to build your own
 * Tutorials
-    * [venn.html](#venn) - programming a simple Venn diagra,
+    * [venn.html](#venn) - programming a simple Venn diagram
     
 ## Single file R-scripts
   
