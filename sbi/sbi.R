@@ -120,7 +120,7 @@ library(MASS)
 #' ## Functions
 #'
 #' 
-#' <a name="dassoc"> </a>
+#' <a name="assoc"> </a>
 #' **sbi$assoc(...,shade=TRUE)** 
 #' 
 #' > Create assocplots with residual coloring.
