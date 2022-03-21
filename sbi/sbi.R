@@ -114,7 +114,13 @@ sbi$VERSION = "2022.03.03"
 .calls=sys.calls()
 srx=grep("^source",.calls)
 idx=srx[length(srx)]
-sbi$FILENAME = gsub("source\\(.(.+).\\)","\\1",.calls[idx])
+if (grepl("['\"]",.calls[idx]))  {
+    # string given
+    sbi$FILENAME = gsub("source\\(.(.+).\\)","\\1",.calls[idx])
+} else {
+    # variable given
+    sbi$FILENAME = eval(parse(text=gsub("source\\((.+)\\)","\\1",.calls[idx])))
+}
 rm(.calls,srx,idx)
 library(MASS)
 #' ## Functions

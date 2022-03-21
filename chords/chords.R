@@ -117,7 +117,13 @@ chords$VERSION = "2022.02.12"
 .calls=sys.calls()
 srx=grep("^source",.calls)
 idx=srx[length(srx)]
-chords$FILENAME = gsub("source\\(.(.+).\\)","\\1",.calls[idx])
+if (grepl("['\"]",.calls[idx]))  {
+    # string given
+    chords$FILENAME = gsub("source\\(.(.+).\\)","\\1",.calls[idx])
+} else {
+    # variable given
+    chords$FILENAME = eval(parse(text=gsub("source\\((.+)\\)","\\1",.calls[idx])))
+}
 rm(.calls,srx,idx)
 
 #' ## FUNCTIONS
