@@ -2,10 +2,10 @@
 #' ---
 #' title: SBI 2022 - sbi.R - functions and operators
 #' author: Detlef Groth, University of Potsdam
-#' date: 2022-03-03
+#' date: 2022-03-21
 #' ---
 #' 
-#' ## R functions for Statistical Bioinformatics - 2022-03-03
+#' ## R functions for Statistical Bioinformatics - 2022-03-21
 #' 
 #' <a name="home"> </a>
 #' 
@@ -108,7 +108,7 @@
 
 
 sbi=new.env()
-sbi$VERSION = "2022.03.03"
+sbi$VERSION = "2022.03.21"
 # where is the file sbi.R
 # store it in the filename variable
 .calls=sys.calls()
