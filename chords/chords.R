@@ -117,7 +117,12 @@ chords$VERSION = "2022.03.21"
 .calls=sys.calls()
 srx=grep("^source",.calls)
 idx=srx[length(srx)]
-if (grepl("['\"]",.calls[idx]))  {
+if (length(idx)==0) {
+    # using Rscript sbi.R
+    argv=commandArgs(trailingOnly=FALSE)
+    idx=grep("--file",argv)
+    chords$FILENAME=gsub("--file=","",argv[idx])
+} else if (grepl("['\"]",.calls[idx]))  {
     # string given
     chords$FILENAME = gsub("source\\(.(.+).\\)","\\1",.calls[idx])
 } else {
@@ -591,10 +596,10 @@ chords$picking = function (strings=c("D","G","B","E"),
 if (sys.nframe() == 0L && !interactive()) {
     Usage = function () {
         cat("chords.R - create Chord diagrams for string instruments\n")
-        cat("\nUsage: Rscript chords.R chord:positions:fingerings [chord:postions:fingerings] outfile.(pdf|png|svg)")
-        cat("\nExample: Rscript chords.R --chords Fadd9:XX3213:00RMIP Fadd9.png")
-        cat("   with command line argument layout you can change the layout: here a 2 rows 3 column layout:\n")
-        cat(" Rscript chords.R --chords --layout 2,3 C:0003:000R Dm:2210:MRI0 Em:0432:0RMI F:2010:M0I0 G7:0212:0RIM Am:2000:M000  GCEA-C-Dur.svg\n")
+        cat("\nUsage:\n\n   Rscript chords.R chord:positions:fingerings [chord:postions:fingerings] outfile.(pdf|png|svg)")
+        cat("\n\nExample:\n\n   Rscript chords.R --chords Fadd9:XX3213:00RMIP Fadd9.png\n\n")
+        cat("   With the command line argument layout you can change the layout.\n   Here a 2 rows 3 column layout example:\n\n")
+        cat(" Rscript chords.R --chords --layout 2,3 C:0003:000R Dm:2210:MRI0 Em:0432:0RMI \\ \n                  F:2010:M0I0 G7:0212:0RIM Am:2000:M000  GCEA-C-Dur.svg\n\n")
     }
     # if running via Rscript
     argv=commandArgs()
