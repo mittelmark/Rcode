@@ -2,7 +2,7 @@
 #' ---
 #' title: SBI 2022 - sbi.R - functions and operators
 #' author: Detlef Groth, University of Potsdam
-#' date: 2022-03-21
+#' date: 2022-03-31
 #' ---
 #' 
 #' ## R functions for Statistical Bioinformatics - 2022-03-21
@@ -108,13 +108,18 @@
 
 
 sbi=new.env()
-sbi$VERSION = "2022.03.21"
+sbi$VERSION = "2022.03.31"
 # where is the file sbi.R
 # store it in the filename variable
 .calls=sys.calls()
 srx=grep("^source",.calls)
 idx=srx[length(srx)]
-if (grepl("['\"]",.calls[idx]))  {
+if (length(idx)==0) {
+    # using Rscript sbi.R
+    argv=commandArgs(trailingOnly=FALSE)
+    idx=grep("--file",argv)
+    sbi$FILENAME=gsub("--file=","",argv[idx])
+} else if (grepl("['\"]",.calls[idx]))  {
     # string given
     sbi$FILENAME = gsub("source\\(.(.+).\\)","\\1",.calls[idx])
 } else {
@@ -3188,6 +3193,10 @@ sbi$venn = function (x,y=NULL,z=NULL,vars=NULL,col=c("#cc888899","#8888cc99","#8
 #'      - adding venn-plot
 #'      - bezier curves and flow update
 #' 
+#' - 2022-03-31 - Version 0.4
+#'      - fix for source with variable name
+#'      - fix for Rscript call
+#'
 #' ## Copyright
 #' 
 #' Copyright @ 2022 - Detlef Groth, University of Potsdam
