@@ -2,10 +2,12 @@
 #' ---
 #' title: SBI 2022 - sbi.R - functions and operators
 #' author: Detlef Groth, University of Potsdam
-#' date: 2022-03-31
+#' date: 2022-04-25
 #' ---
 #' 
-#' ## R functions for Statistical Bioinformatics - 2022-03-21
+## include "../header.md"
+#' 
+#' ## R functions for Statistical Bioinformatics - 2022-04-25
 #' 
 #' <a name="home"> </a>
 #' 
@@ -108,7 +110,7 @@
 
 
 sbi=new.env()
-sbi$VERSION = "2022.03.31"
+sbi$VERSION = "2022-04-25"
 # where is the file sbi.R
 # store it in the filename variable
 .calls=sys.calls()
@@ -1661,7 +1663,7 @@ sbi$is.dict <- function (l) {
 #' <a name="mkdoc"> </a>
 #' **sbi$mkdoc(infile,cssfile="mini.css",eval=TRUE)** 
 #' 
-#' > Extract embedded Markdown documentation after `#'` and convert it into HTML.
+#' > Extract embedded Markdown documentation after `#'` and convert it into HTML. Further include constructs like '## include "header.md" are supported.
 #' 
 #' > Arguments:
 #' 
@@ -1696,6 +1698,13 @@ sbi$mkdoc <- function (infile,cssfile="mini.css",eval=FALSE)  {
                 line=gsub("```\\{r .+","```{r}",line)
             }
             cat(line,"\n",file=fout)
+        } else if (grepl("^\\s*## include ",line)) {
+            fname=gsub(".+?include +\"(.+)\".*","\\1",line) 
+            inc=file(fname,"r")             
+            while(length((linei = readLines(inc,n=1)))>0) {                         
+                cat(linei,"\n",file=fout)
+            }
+            close(inc)
         }
     }
     close(fin)
@@ -3195,7 +3204,9 @@ sbi$venn = function (x,y=NULL,z=NULL,vars=NULL,col=c("#cc888899","#8888cc99","#8
 #' 
 #' - 2022-03-31 - Version 0.4
 #'      - fix for source with variable name
-#'      - fix for Rscript call
+#'      - fix for Rscript call using variables
+#' - 2022-04-25 - Version 0.5
+#'      - sbi$mkdoc support for `## include "header.md"` constructs
 #'
 #' ## Copyright
 #' 
