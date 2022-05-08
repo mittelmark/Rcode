@@ -7,6 +7,7 @@ This is a repository with single file R-scripts and some R tutorials.
 * Single file R-scripts
     * [bkcd.R](#bkcd)  - xkcd like plots using base graphicsfunctions and operators
     * [chords.R](#chords) - draw chord diagrams for fretted instruments like Guitar and Ukulele using R
+    * [mgraph.R](#mgraph) - minimal graph module to create, visualize and analyze graphs
     * [sbi.R](#sbi)  - R functions for the course Statistical Bioinformatics
 * Libraries
     * [mini](#mini) - a minimal R library which can be used as starter to build your own
@@ -45,6 +46,18 @@ Here an example, some non-standard chords for an Ukulele in the GCEA-tuning.
 
 ![](chords/uke-chords.png)
 
+### mgraph.R
+<a name="mgraph"> </a>
+
+`mgraph.R`  - minimal graph module to create, visualize and analyze graphs
+
+* Download: [mgraph.R](https://raw.githubusercontent.com/mittelmark/Rcode/main/mgraph/mgraph.R)
+* Documentation: [mgraph.html](https://htmlpreview.github.io/?https://github.com/mittelmark/Rcode/blob/master/mgraph/mgraph.html)
+* Vignette: [vignette.html](https://htmlpreview.github.io/?https://github.com/mittelmark/Rcode/blob/master/mgraph/vignette.html)
+
+Here an example for the creation and visualization of a regular graph, first as a directed one, then as a undirected one.
+
+![](mgraph/example.png)
 
 ### sbi.R
 <a name="sbi"> </a>
