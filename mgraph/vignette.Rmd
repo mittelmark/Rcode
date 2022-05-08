@@ -1,0 +1,66 @@
+---
+title: "Vignette for mgraph.R - a mini graph module"
+author: Detlef Groth
+date: 2022-05-07
+---
+
+<center>Module documentation: [mgraph.R](mgraph.html)</center>
+
+## Introduction
+
+This is the vignette for the file _mgraph.R_ which provides basic functionalities to work with graphs in R. 
+
+There are several good R packages like [igraph] or [network] which should be
+used for serious R programming. The purpose of the graph module _mgraph.R_ is
+nore educational. The file is used in my teachings at the University of
+Potsdam in the courses _Machine Learning in Bioinformatics_, _Statistical
+Bioinformatics_ and _Practical Bioinformatics_. The students should have the
+possibility to easily study and learn from R code and the implementations for
+several algorithms. The embedded documentation should as well convince the
+students from documenting their own code properly.
+
+## Loading the module
+
+The module _mgraph.R_ contains functions to create certain graph types and as
+well methods to create graphs from data. Before you start you have usually to
+source the file from within your R session. All methods and variables are
+stored with the R environment _mgraph_. You can inspect what is available within the _mgraph_
+object using the ls function.
+
+```{r}
+source('mgraph.R')
+ls() # all variables - might vary between machines
+ls(mgraph)  # module methods and variables
+```
+
+Uppercase objects are usually variables which should not be modified or
+private functions which should not be called from the user.  Here we just output the current version of the module.
+
+```{r}
+print(mgraph$VERSION)
+```
+
+## Graph generation
+
+There is a main method for creating graphs from scratch, it is the method [mgraph$new](mgraph.html#new).
+
+```{r label=new,fig=TRUE,fig.width=9,fig.height=9}
+set.seed(123)
+par(mfrow=c(2,2),mai=rep(0.1,4))
+A=mgraph$new(type="random",nodes=8,edges=12)
+B=mgraph$new(type="barabasi",nodes=8,m=1)
+C=mgraph$new(type="cluster",nodes=8,edges=8,k=2)
+D=mgraph$new(type="regular",nodes=8,k=3)  
+plot(A);plot(B);plot(C);plot(D,layout="circle")  
+```
+
+
+## TODO's
+
+foo bar
+
+
+## EOF
+
+
+
