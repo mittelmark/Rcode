@@ -5,6 +5,13 @@
 #' date: 2022-02-12
 #' ---
 #' 
+#' <center>
+#' [bkcd](../bkcd/bkcd.html) -
+#' [chords](../chords/chord.html) -
+#' [mgraph](../mgraph/mgraph.html) -
+#' [sbi](../sbi/sbi.html)
+#' </center>
+#'
 #' ## NAME
 #' <a name="home"> </a>
 #' 
@@ -115,21 +122,21 @@
 chords=new.env()
 chords$VERSION = "2022.03.21"
 .calls=sys.calls()
-srx=grep("^source",.calls)
-idx=srx[length(srx)]
-if (length(idx)==0) {
+.srx=grep("^source",.calls)
+.idx=.srx[length(.srx)]
+if (length(.idx)==0) {
     # using Rscript sbi.R
     argv=commandArgs(trailingOnly=FALSE)
-    idx=grep("--file",argv)
-    chords$FILENAME=gsub("--file=","",argv[idx])
-} else if (grepl("['\"]",.calls[idx]))  {
+    .idx=grep("--file",argv)
+    chords$FILENAME=gsub("--file=","",argv[.idx])
+} else if (grepl("['\"]",.calls[.idx]))  {
     # string given
-    chords$FILENAME = gsub("source\\(.(.+).\\)","\\1",.calls[idx])
+    chords$FILENAME = gsub("source\\(.(.+).\\)","\\1",.calls[.idx])
 } else {
     # variable given
-    chords$FILENAME = eval(parse(text=gsub("source\\((.+)\\)","\\1",.calls[idx])))
+    chords$FILENAME = eval(parse(text=gsub("source\\((.+)\\)","\\1",.calls[.idx])))
 }
-rm(.calls,srx,idx)
+rm(.calls,.srx,.idx)
 
 #' ## FUNCTIONS
 #' <a name="functions"> </a>
