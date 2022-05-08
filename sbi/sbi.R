@@ -2,17 +2,17 @@
 #' ---
 #' title: SBI 2022 - sbi.R - functions and operators
 #' author: Detlef Groth, University of Potsdam
-#' date: 2022-04-25
+#' date: 2022-05-08
 #' ---
 #' 
 ## include "../header.md"
 #' 
-#' ## R functions for Statistical Bioinformatics - 2022-04-25
+#' ## R functions for Statistical Bioinformatics - 2022-05-08
 #' 
 #' <a name="home"> </a>
 #' 
-#' This is a collection of useful functions shown in my teachings 
-#' in the course Statistical Bioinformatics as well a few for the 
+#' This is a collection of useful functions shown in my teachings
+#' in the course Statistical Bioinformatics as well a few for the
 #' course Databases and Practical Programming using R in 2021/2022.
 #' Below you find the documentation for the following functions 
 #' and operators:
@@ -62,6 +62,7 @@
 #'   * [sbi$pcor.test](#pcor.test) - calculate partial correlation and test statistics for two variables corrected for one or more others (stats)
 #'   * [sbi$readDataFiles](#readDataFiles) - read a directory of data files with the same function and settings (data).
 #'   * [sbi$report.pval](#report.pval) - report a p-value using threshold or star syntax  (stats)
+#'   * [sbi$require](#require) - source a R file which is in a parallel directory to sbi.R
 #'   * [sbi$shape](#shape) - create polygon shapes centered at given x and y coordinates (plot)
 #'   * [sbi$shell](#shell) - execute shell commands for embedding their ouput - Unix only (tool)
 #'   * [sbi$skewness](#skewness) - third central moment of a distribution (stats)
@@ -108,28 +109,27 @@
 #' ```
 #' 
 
-
+library(MASS)
 sbi=new.env()
-sbi$VERSION = "2022-04-25"
+sbi$VERSION = "2022-05-08"
 # where is the file sbi.R
 # store it in the filename variable
 .calls=sys.calls()
-srx=grep("^source",.calls)
-idx=srx[length(srx)]
-if (length(idx)==0) {
+.srx=grep("^source",.calls)
+.idx=.srx[length(.srx)]
+if (length(.idx)==0) {
     # using Rscript sbi.R
     argv=commandArgs(trailingOnly=FALSE)
-    idx=grep("--file",argv)
-    sbi$FILENAME=gsub("--file=","",argv[idx])
-} else if (grepl("['\"]",.calls[idx]))  {
+    .idx=grep("--file",argv)
+    sbi$FILENAME=gsub("--file=","",argv[.idx])
+} else if (grepl("['\"]",.calls[.idx]))  {
     # string given
-    sbi$FILENAME = gsub("source\\(.(.+).\\)","\\1",.calls[idx])
+    sbi$FILENAME = gsub("source\\(.(.+).\\)","\\1",.calls[.idx])
 } else {
     # variable given
-    sbi$FILENAME = eval(parse(text=gsub("source\\((.+)\\)","\\1",.calls[idx])))
+    sbi$FILENAME = eval(parse(text=gsub("source\\((.+)\\)","\\1",.calls[.idx])))
 }
-rm(.calls,srx,idx)
-library(MASS)
+rm(.calls,.srx,.idx)
 #' ## Functions
 #'
 #' 
@@ -419,9 +419,10 @@ sbi$cohensH <- function (tab) {
 #' > See also: [sbi$cohensH](#cohensH)
 
 sbi$cohensW <- function (tab) {
+    owarn=options("warn")[[1]]
     options(warn=-1)
     pe=prop.table(chisq.test(tab)$expected)
-    options(warn=0)
+    options(warn=owarn)
     po=prop.table(tab)
     w=sqrt(sum(((po-pe)^2)/pe))
     
@@ -2159,7 +2160,7 @@ sbi$pastel = function (n) {
 #' 
 #' > Improved biplot for pca objects.
 #' 
-#' > The function _pca.biplot_ provides an improved biblot for
+#' > The function _pca.biplot_ provides an improved biplot for
 #'   visualizing the pairwise scores of individual principal components of 
 #'   an object created using the function _prcomp_. In contrast to the default 
 #'   biplot function  this plot visualizes the data as points and not row numbers,
@@ -2242,6 +2243,45 @@ sbi$pca.biplot = function (pca,pcs=c("PC1","PC2"),
              rownames(loadings),col='black',font=2)
     }
 
+}
+
+#' 
+#' <a name="pca.oncor"> </a>
+#' **sbi$pca.oncor(x,...)** 
+#' 
+#' > Perform a PCA on a correlation matrix.
+#' 
+#' > The function _pca.oncor_ does a PCA using eigenvector eigenvalue decomposition
+#'   on a correlation matrix. PCA usually performs Pearson correlation internally what
+#'   leads to a highly outlier sensitive analysis. If the user decides
+#'   to use a method like spearman or even bi-seriell, polychoric or for nominal data
+#'   effect size measures like cohens W this method here can be used. Note that this does not return new coordinates for the sample as the sample contribution is lost in the
+#'   correlation matrix. The method might however be used to check if the results between Pearson and Spearman PCA are similar or does 
+#'   outliers lead to a completly different result.
+#' 
+#' > Arguments:
+#' 
+#' > - _x_ - a symmetric matrix usually with pairwise correlations.
+#' 
+#' > Returns: a PCA like list object with components sd and rotation
+#' 
+#' > Example:
+#' 
+#' > ```{r label=oncor}
+#'   data(USArrests)
+#'   C=cor(USArrests)
+#'   sbi$pca.oncor(C)
+#'   D=cor(USArrests,method="spearman") 
+#'   sbi$pca.oncor(D)
+#' > ```
+#' 
+sbi$pca.oncor <- function (x) {
+    ev=eigen(x)
+    res=list(rotation=ev$vectors,sdev=sqrt(ev$values))
+    colnames(res$rotation)=paste("PC",1:ncol(x),sep="")
+    rownames(res$rotation)=rownames(x)
+    return(res)
+             
 }
 #' 
 #' <a name="pca.pairs"> </a>
@@ -2609,6 +2649,37 @@ sbi$report.pval <- function (p.val,star=FALSE) {
         return(sprintf("%.2f",p.val))
     }   
 }   
+
+#' 
+#' <a name="require"> </a>
+#' **sbi$require(basename)** 
+#' 
+#' > Source a R file which is in a parallel directory to sbi.R.
+#' 
+#' > Arguments:
+#' 
+#' > -  _basename_ - a filename without the file extension
+#' 
+#' > Returns: None
+#' 
+#' > Example:
+#' 
+#' > ```{r label=require}
+#'   sbi$require("mgraph")
+#'   ls(mgraph)
+#' > ```
+#' 
+
+sbi$require <- function (basename) {
+    # global variable is required
+    .filename<<-file.path(dirname(sbi$FILENAME),"..",basename,paste(basename,".R",sep=""))
+    if (!file.exists(.filename)) {
+        stop(paste("Error: The file ",.filename,"does not exists!"))
+    } else {
+        source(.filename)
+    }
+    rm(.filename)
+}
 
 #' 
 #' <a name="shape"> </a>
@@ -3207,6 +3278,9 @@ sbi$venn = function (x,y=NULL,z=NULL,vars=NULL,col=c("#cc888899","#8888cc99","#8
 #'      - fix for Rscript call using variables
 #' - 2022-04-25 - Version 0.5
 #'      - sbi$mkdoc support for `## include "header.md"` constructs
+#' - 2022-05-05 - Version 0.6
+#'      - changing idx variable to .idx to avoid overwriting
+#'      - adding require method to load other R files in parallel
 #'
 #' ## Copyright
 #' 
