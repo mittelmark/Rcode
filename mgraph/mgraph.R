@@ -1,15 +1,17 @@
 #!/usr/bin/env Rscript
+library(rpart)
+library(tcltk)
 #' ---
 #' title: mgraph.R - mini graph module
 #' author: Detlef Groth, University of Potsdam
-#' date: 2022-05-04
+#' date: 2022-05-09
 #' ---
 #' 
 ## include "../header.md"
 #' 
 #' <center>Module Vignette: [mgraph vignette](vignette.html)</center>
 #'
-#' ## R functions for working with graphs - 2022-05-04
+#' ## R functions for working with graphs - 2022-05-09
 #' 
 #' <a name="home"> </a>
 #' 
@@ -27,9 +29,12 @@
 #'   * [mgraph$components](#components) - extract graph components
 #'   * [mgraph$connect](#connect) - connect graph components
 #'   * [mgraph$d2u](#d2u) - create an undirected graph out of a directed graph
+#'   * [mgraph$data2graph](#data2graph) - create graph out of a data using different algorithms
 #'   * [mgraph$degree](#degree) - number of undirected or incoming and outgoing edges
-#'   * [mgraph$data2graph](#data2graph) - correlation data for the given graph
+#'   * [mgraph$graph2data](#graph2data) - correlation data for the given graph
+#'   * [mgraph$kroki](#kroki) - visualize diagram code for ditaa, graphviz etc
 #'   * [mgraph$layout](#layout) - calculate a two dimensional graph layout
+#'   * [mgraph$nodeColors](#nodeColors) - node colors for directed graphs
 #'   * [mgraph$plot](#plot) - plot a mgraph object (S3 - plot.mgraph)
 #'   * [mgraph$shortest.paths](#shortest.paths) - calculate the shortest path for a given graph
 #'   * [mgraph$summary](#summary) - provide basic information about a mgraph object (S3 - summary.mgraph)
@@ -70,7 +75,7 @@
 
 library(MASS)
 mgraph=new.env()
-mgraph$VERSION = "2022-05-04"
+mgraph$VERSION = "2022-05-09"
 # where is the file mgraph.R
 # store it in the filename variable
 .calls=sys.calls()
@@ -125,7 +130,7 @@ rm(.calls,.srx,.idx)
 #'   C = mgraph$new(type="circle",nodes=8)
 #'   B = mgraph$new(type="band",nodes=8)
 #'   par(mfrow=c(4,2),mai=rep(0.1,4))
-#'   plot(G,layout="circle")
+#'   plot(G,layout="circle",vertex.color=mgraph$nodeColors(G))
 #'   plot(R,layout="circle")
 #'   plot(A,layout="circle")
 #'   plot(C,layout="circle")
@@ -416,6 +421,151 @@ mgraph$d2u <- function (g) {
     return(g)
 }
 
+#' <a name="data2graph"> </a>
+#' **mgraph$data2graph(x,type="rpart")** 
+#' 
+#' > Create  graph out of a data using different algorithms.
+#' 
+#' > This function gets some input data and creates an un- or a directed graph
+#'   based on the structure of the input data.
+#' 
+#' > Arguments:
+#' 
+#' > - _x_ - data frame or matrix with variables in the columns.
+#'   - _type_ - which algorithm to use, currently only 'rpart' is possible, default: rpart
+#'   - _rs_ - threshold for r-square values, default: 0.01
+#'   - _k_ - how many initial candidate variables to consider, default: 10
+#'
+#' > Examples:
+#' 
+#' > ```{r label=data2graph,fig=TRUE,fig.cap="",fig.width=9,fig.height=12}
+#'   par(mfrow=c(3,2),mai=c(0.2,0.2,0.8,0.1))
+#'   A=mgraph$new(type="angie",nodes=8,edges=8)
+#'   data=mgraph$graph2data(A,prop=0.02,iter=50)
+#'   round(cor(t(data),method="spearman"),2)
+#'   B=mgraph$data2graph(t(data),type="rpart",rs=0.05)
+#'   C=mgraph$data2graph(t(data),type="pearson",rs=0.05)
+#'   D=mgraph$data2graph(t(data),type="kendall",rs=0.1)
+#'   E=mgraph$data2graph(t(data),type="lm",rs=0.05)
+#'   F=mgraph$data2graph(t(data),type="lm",rs=0.01)
+#'   round(B$rs,2)
+#'   B$graph
+#'   lay=mgraph$layout(A)
+#'   plot(A,layout=lay,main="original",vertex.color=mgraph$nodeColors(A)); 
+#'   plot(B$graph,layout=lay,main="rpart - rs 0.05")
+#'   plot(C$graph,layout=lay,main="pearson - rs 0.05")
+#'   plot(D$graph,layout=lay,main="kendall - rs 0.10")
+#'   plot(E$graph,layout=lay,main="lm - rs 0.05")
+#'   plot(F$graph,layout=lay,main="lm - rs 0.01")
+#' > ```
+#'
+
+mgraph$data2graph <- function (x,type="rpart",rs=0.01,k=10) {
+    types=c("kendall","pearson","linear","lm","rpart","spearman")
+    type=types[pmatch(type,types)]
+    if (type == "linear") {
+        type="lm"
+    }
+    A=matrix(0,nrow=ncol(x),ncol=ncol(x))
+    rownames(A)=colnames(A)=colnames(x)
+    RS=A
+    if (k > ncol(x)) {
+        k=ncol(x)
+    }
+    if (!is.data.frame(x)) {
+        if (is.matrix(x)) {
+           x <- as.data.frame(x)
+        } else {
+            stop("Error: Input d must be a data frame or matrix!")
+        }
+    }
+    if (type == "lm") {
+        chosen=list()
+        cor_d <- cor(x, method="pearson", use="pairwise.complete.obs")
+        diag(cor_d)=0
+        for (node in colnames(x)) {
+            chosen[node] <- c()
+            # MN Use absolute correlation values
+            cand <- setdiff(names(sort(rank(abs(cor_d[node, ])), decreasing=TRUE))[1:k],node)
+            # MN Can be omitted, because of zero diagonal
+            # cand <- cand[-which(cand == node)]
+            model <- lm(formula(paste(c(node, "~", "0"), collapse="")), data=x[,c(node,cand)])
+            aic <- AIC(model)
+            # MN Changed, concentrate in one line
+            rsq <- summary.lm(model)$adj.r.squared
+            for (target in cand) {
+                model_tmp <- lm(formula(paste(c(node, "~", paste(c(chosen[[node]], target), collapse="+")), collapse="")), data=x[,c(node,cand)])
+                aic_tmp <- AIC(model_tmp)
+                # MN Changed, concentrate in one line
+                rsq_tmp <- summary.lm(model_tmp)$adj.r.squared
+                if ((aic_tmp < aic && rsq_tmp - rsq >= rs)) {
+                    chosen[[node]] <- append(chosen[[node]], target)
+                    aic <- aic_tmp
+                    RS[node, target] <- rsq_tmp - rsq
+                    A[node, target] <- 1
+                    rsq <- rsq_tmp
+                }
+            }
+        }
+        A=as.matrix(mgraph$d2u(A))
+    } else if (type == "rpart") {
+        rs.threshold=rs
+        # TODO: Mutual information as alternative
+        # filtering
+        C=cor(x,method="spearman",use="pairwise.complete.obs")
+        for (i in 1:ncol(x)) {
+            idx=order(abs(C[i,]),decreasing=TRUE)[2:k]
+            #idx=which(C[i,]^2>0.01)
+            rp=rpart::rpart(formula(paste(colnames(x)[i], "~",
+                                          paste( colnames(x)[idx],collapse="+"))),
+                                          data=x[,c(i,idx)])
+            # check all important variables
+            vimps=names(rp$variable.importance)
+            rp1=rpart::rpart(formula(paste(colnames(x)[i], "~",vimps[1])),data=x)
+            rs=cor(predict(rp1,newdata=x),x[,i],use="pairwise.complete.obs",method="spearman")^2
+            if (rs < rs.threshold) {
+                break
+            }
+            A[i,vimps[1]]=rs
+            
+            rss=c(rs)
+            for (vi in 2:length(vimps)) {
+                rpi=rpart::rpart(formula(paste(colnames(x)[i], "~",
+                                               paste( vimps[1:vi],collapse="+"))),
+                                               data=x)
+                rs=cor(predict(rpi,newdata=x),x[,i],use="pairwise.complete.obs",method="spearman")^2
+                if (rs < sum(rss)+rs.threshold) {
+                    break
+                }
+                A[i,vimps[vi]]=rs-sum(rss)
+                rss=c(rss,rs-sum(rss))
+            }
+        }
+        RS=A
+        print(round(RS,2))
+        A[A>=rs.threshold]=1
+        A[A<rs.threshold]=0
+        A=as.matrix(mgraph$d2u(A))
+        A[abs(C)<0.1]=0
+        #A[A==1 & C < 0]=-1
+    } else if (type %in% c("pearson","spearman","kendall")) {
+        A=cor(x,method=type,use="pairwise.complete.obs")
+        diag(A)=0
+        if (type %in% c("pearson","spearman")) {
+            A=A^2
+        } else {
+            A=abs(A)
+        }
+        RS=A
+        A[A<rs]=0
+        A[A>=rs]=1
+    } else {
+        stop("Currently only rpart, pearson, spearman and kendall as types are supported!")
+    }
+    g=mgraph$new(A)
+    return(list(graph=g,rs=RS))
+}
+
 #' <a name="degree"> </a>
 #' **mgraph$degree(g,mode="undirected")** 
 #' 
@@ -506,6 +656,87 @@ mgraph$graph2data <- function (A,n=100,iter=15,val=100,sd=2,prop=0.05,noise=1) {
     return(res)
 }
 
+#' <a name="kroki"> </a>
+#' **mgraph$kroki(text,type="ditaa",ext="png")** 
+#' 
+#' > Attention, often does not work! Create diagram URL's based on kroki supported tools.
+#' 
+#' > This function is creates a URL which can be easily embedded into Markdown code for displaying
+#'   diagrams supported by the online tool [kroki.io](https://kroki.io).
+#'   There is as well an online diagram editor, see here [niolesk](https://niolesk.top/).
+#' 
+#' > Arguments:
+#' 
+#' > - _text_ - some diagram code, default: "A --> B"
+#'   - _filename_ - some input file, either _text_ or _file_ must be given, default: NULL
+#'   - _mode_ - diagram type, supported is ditaa, graphviz, and many others, see the kroki website, default: ditaa
+#'   - _ext_ - file extension, usally 'png', 'svg' or 'pdf', default: 'png'
+#'
+#' > Examples:
+#' 
+#' > ```{r label=kroki}
+#'   url1=mgraph$kroki("
+#'   digraph g { 
+#'      rankdir=\"LR\";
+#'      node[style=filled,fillcolor=salmon];
+#'      A -> B -> C ; 
+#'   }",
+#'   type="graphviz")
+#'   substr(url1,1,40)
+#'   url2=mgraph$kroki("
+#'   +---------+    +--------+
+#'   |    AcEEF+--->+   BcFEE+
+#'   +---------+    +--------+
+#'   ")
+#' > ```
+#' 
+#' > To embed the image you can use Markdown code like here:
+#' 
+#' > ```
+#'   # remove space before r letter
+#'   ![ ](` r url1 `)
+#' > ```
+#'
+#' > Here the output:
+#' 
+#' > ![ ](`r url1`)
+#' 
+#' > And here the image for the second diagram, a Ditaa diagram:
+#' 
+#' > ![ ](`r url2`)
+#' 
+#' > The diagram code can be read as well from a file here a Ditaa file:
+#' 
+#' > ```{r}
+#'   cat(sbi$file.head("hw.ditaa"),sep="\n")
+#'   url3=mgraph$kroki(filename="hw.ditaa")
+#'   nchar(url3)
+#' > ```
+#' 
+#' > ![](`r url3`)
+#' 
+
+mgraph$kroki <- function (text="A --> B",filename=NULL,type="ditaa",ext="png") {
+    .Tcl("
+    proc dia2kroki {text} {
+        return [string map {+ - / _ = \"\"}  [binary encode base64 [zlib compress $text]]]
+    }
+    ")
+    if (!is.null(filename)) {
+        if (!file.exists(filename)) {
+            stop(paste("Error: File",filename,"does not exists!"))
+        } else {
+            fin=file(filename,'r')
+            text=readLines(fin,n=-1L)
+            close(fin)
+            text=paste(text,collapse="\n")
+        }
+    }
+    url = tclvalue(tcl("dia2kroki",text))
+    url= paste("https://kroki.io",type,ext,url,sep="/")
+    # memCompress and openssl::base64_encode in R did not work always
+    return(url)
+}
 #' <a name="layout"> </a>
 #' **mgraph$layout(g,mode="sam")** 
 #' 
@@ -609,6 +840,42 @@ mgraph$layout = function (g,mode='sam', noise=FALSE, star.center=NULL) {
     return(xy)
 }
 
+#' <a name="nodeColors"> </a>
+#' **mgraph$nodeColors(g,colors=c("skyblue","grey80","salmon")** 
+#' 
+#' > Returns node colors for directed graphs.
+#' 
+#' > This function simplifies automatic color coding of nodes for directed graphs.
+#'   Nodes will be colored based on their degree properties, based
+#'   on their incoming and outcoming edges.
+#' 
+#' > Arguments:
+#' 
+#' > - _g_ - a mgraph object or an adjacency matrix or an adjacency list
+#'   - _col_ - default colors for nodes with only incoming, in- and outgoing and only outgoing edges, default: c("skyblue","grey80","salmon")
+#'
+#' > Examples:
+#' 
+#' > ```{r label=nodeColors,fig=TRUE,fig.cap="",fig.width=9,fig.height=4.5}
+#'   par(mfrow=c(1,2),mai=rep(0.1,4))
+#'   A=mgraph$new(type="random",nodes=6,edges=8)
+#'   cols=mgraph$nodeColors(A)
+#'   mgraph$degree(A,mode="in")
+#'   mgraph$degree(A,mode="out")
+#'   cols
+#'   plot(A, layout="star")
+#'   plot(A, layout="star",vertex.color=cols) 
+#' > ```
+#'
+
+mgraph$nodeColors <- function (g,col=c("skyblue","grey80","salmon")) {
+    colors = rep(col[2],nrow(g))
+    out    = mgraph$degree(g,mode="out")
+    inc     = mgraph$degree(g,mode="in")    
+    colors[out >  0 & inc == 0] = col[3]
+    colors[out == 0 & inc >  0] = col[1]    
+    return(colors)
+}
 #' <a name="plot"> </a>
 #' **mgraph$plot(g,layout="sam")** 
 #' 
@@ -644,7 +911,7 @@ mgraph$layout = function (g,mode='sam', noise=FALSE, star.center=NULL) {
 #'
 
 mgraph$plot = function (g,layout='sam',vertex.size=1,lwd=3,weighted=FALSE,
-                        vertex.color="salmon",vertex.cex=1,pch=19) {
+                        vertex.color="grey80",vertex.cex=1,pch=19,...) {
     A=g
     if (is.matrix(layout) | is.data.frame(layout)) {
         if (ncol(layout) != 2) {
@@ -675,7 +942,7 @@ mgraph$plot = function (g,layout='sam',vertex.size=1,lwd=3,weighted=FALSE,
     if (identical(A,t(A))) {
         g="undirected"
     }
-    plot(layout,xlim=xlim,ylim=ylim,axes=FALSE,xlab="",ylab="")
+    plot(layout,xlim=xlim,ylim=ylim,axes=FALSE,xlab="",ylab="",...)
     for (i in 1:nrow(A)) {
         idx=which(A[i,]!= 0)
         for (j in idx) {
@@ -828,10 +1095,10 @@ summary.mgraph=mgraph$summary
 #'   I=mgraph$u2d(U,shuffle=TRUE)
 #'   identical(G,I)
 #'   lay=mgraph$layout(G)
-#'   plot(G,layout=lay)
+#'   plot(G,layout=lay,vertex.color=mgraph$nodeColors(G))
 #'   plot(U,layout=lay)
-#'   plot(H,layout=lay)
-#'   plot(I,layout=lay)
+#'   plot(H,layout=lay,vertex.color=mgraph$nodeColors(H))
+#'   plot(I,layout=lay,vertex.color=mgraph$nodeColors(I))
 #' > ```
 #'
 mgraph$u2d <- function (g,shuffle=FALSE) {

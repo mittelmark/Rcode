@@ -2,12 +2,12 @@
 #' ---
 #' title: SBI 2022 - sbi.R - functions and operators
 #' author: Detlef Groth, University of Potsdam
-#' date: 2022-05-08
+#' date: 2022-05-09
 #' ---
 #' 
 ## include "../header.md"
 #' 
-#' ## R functions for Statistical Bioinformatics - 2022-05-08
+#' ## R functions for Statistical Bioinformatics - 2022-05-09
 #' 
 #' <a name="home"> </a>
 #' 
@@ -111,7 +111,7 @@
 
 library(MASS)
 sbi=new.env()
-sbi$VERSION = "2022-05-08"
+sbi$VERSION = "2022-05-09"
 # where is the file sbi.R
 # store it in the filename variable
 .calls=sys.calls()
@@ -1211,6 +1211,7 @@ sbi$file.head = function (filename,n=6) {
     }
     fin=file(filename,'r')
     res=readLines(fin,n=n)
+    close(fin)
     return(res)
 }
 
@@ -2678,7 +2679,7 @@ sbi$require <- function (basename) {
     } else {
         source(.filename)
     }
-    rm(.filename)
+    #rm(.filename)
 }
 
 #' 
@@ -3278,9 +3279,10 @@ sbi$venn = function (x,y=NULL,z=NULL,vars=NULL,col=c("#cc888899","#8888cc99","#8
 #'      - fix for Rscript call using variables
 #' - 2022-04-25 - Version 0.5
 #'      - sbi$mkdoc support for `## include "header.md"` constructs
-#' - 2022-05-05 - Version 0.6
+#' - 2022-05-09 - Version 0.6
 #'      - changing idx variable to .idx to avoid overwriting
 #'      - adding require method to load other R files in parallel
+#'      - fix for file.head, closing connection
 #'
 #' ## Copyright
 #' 
